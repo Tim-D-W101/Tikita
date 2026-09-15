@@ -20,7 +20,13 @@
 <header class="appbar">
   <div class="appbar-inner">
     <h1 class="brand">Tikita</h1>
-    <button type="button" class="icon-btn" id="installBtn" hidden aria-label="Install app">Install</button>
+    <div class="bar-actions">
+      <button type="button" class="icon-btn" id="installBtn" hidden aria-label="Install app">Install</button>
+      <button type="button" class="sync-chip" id="syncChip" aria-label="Sync status">
+        <span class="dot" id="syncDot"></span>
+        <span id="syncChipText">This phone only</span>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -130,6 +136,50 @@
     </div>
   </section>
 
+
+  <!-- ══════════════════ SYNC ══════════════════ -->
+  <section class="view" id="view-sync" hidden aria-labelledby="sync-heading">
+    <h2 class="view-title" id="sync-heading">Share with other phones</h2>
+
+    <div class="card" id="syncStatusCard">
+      <h3 class="card-title">Status</h3>
+      <p class="sync-line" id="syncStatusLine">—</p>
+      <p class="sync-sub" id="syncSubLine"></p>
+      <div class="btn-row" id="syncActions" hidden>
+        <button type="button" class="ghost-btn" id="syncNowBtn">Sync now</button>
+        <button type="button" class="ghost-btn danger" id="disconnectBtn">Disconnect</button>
+      </div>
+    </div>
+
+    <div class="card" id="connectCard">
+      <h3 class="card-title">Connect this phone</h3>
+      <p class="card-note">
+        Type the company code. Every phone with the same code shares one set of
+        teams, workers and attendance records.
+      </p>
+      <form id="connectForm" autocomplete="off">
+        <label class="field">
+          <span class="sr-only">Company code</span>
+          <input type="text" id="codeInput" placeholder="XXXX-XXXX-XXXX-XXXX"
+                 autocapitalize="characters" autocorrect="off" spellcheck="false"
+                 maxlength="24" aria-label="Company code" required>
+        </label>
+        <button type="submit" class="primary-btn wide" id="connectBtn">Connect</button>
+      </form>
+      <p class="hint" id="connectHint"></p>
+    </div>
+
+    <div class="card muted-card">
+      <h3 class="card-title">How it works</h3>
+      <p class="card-note">
+        Marking attendance never needs signal. Changes are saved on this phone
+        straight away and go to the other phones the next time you have a
+        connection. Each supervisor marks their own team, so nobody overwrites
+        anyone else.
+      </p>
+    </div>
+  </section>
+
 </main>
 
 <nav class="tabbar" role="tablist" aria-label="Sections">
@@ -150,6 +200,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="./xlsx.js"></script>
+<script src="./sync.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>

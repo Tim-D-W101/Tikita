@@ -22,7 +22,9 @@
     version: SCHEMA_VERSION,
     sites: [],      // {id, name}
     workers: [],    // {id, siteId, name, active}
-    records: {}     // {'YYYY-MM-DD': {workerId: {s: 'P'|'A', x: number}}}
+    records: {},    // {'YYYY-MM-DD': {workerId: {s: 'P'|'A', x: number}}}
+    sync: null,     // {code, name, lastNow, lastSyncedAt, lastError} — see sync.js
+    pending: null   // changes this phone still owes the other phones
   };
 
   var ui = {
@@ -49,6 +51,8 @@
         state.sites = Array.isArray(parsed.sites) ? parsed.sites : [];
         state.workers = Array.isArray(parsed.workers) ? parsed.workers : [];
         state.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
+        if (parsed.sync) state.sync = parsed.sync;
+        if (parsed.pending) state.pending = parsed.pending;
       }
     } catch (err) {
       toast('Saved data could not be read.');
@@ -66,7 +70,9 @@
         version: SCHEMA_VERSION,
         sites: state.sites,
         workers: state.workers,
-        records: state.records
+        records: state.records,
+        sync: state.sync,
+        pending: state.pending
       }));
     } catch (err) {
       toast('Could not save — device storage may be full.');
@@ -180,14 +186,24 @@
     } else {
       day[workerId] = { s: status, x: (status === 'P' && existing) ? (existing.x || 0) : 0 };
     }
-    save();
+    changed('marks', TikitaSync.markKey(key, workerId));
   }
 
   function setExtra(key, workerId, hours) {
     var day = state.records[key];
     if (!day || !day[workerId] || day[workerId].s !== 'P') return;
     day[workerId].x = Math.max(0, Math.min(24, Math.round(hours * 4) / 4)) || 0;
+    changed('marks', TikitaSync.markKey(key, workerId));
+  }
+
+  /*
+   * Save locally, then remember the change so the next sync carries it to the
+   * other phones. Local first, always — signal is not something a site has.
+   */
+  function changed(kind, key) {
+    TikitaSync.touch(kind, key);
     save();
+    TikitaSync.schedule();
   }
 
   // ── small DOM utils ────────────────────────────────────
@@ -250,6 +266,11 @@
     }
 
     var present = 0, absent = 0, extra = 0;
+    var nudge = TikitaSync.status().connected ? '' :
+      '<div class="sync-nudge">' +
+        '<p>Records are kept on this phone only.</p>' +
+        '<button type="button" data-act="goto-sync">Share with other phones</button>' +
+      '</div>';
 
     var html = teams.map(function (team) {
       present += team.present;
@@ -308,7 +329,7 @@
       return '<section class="team-block">' + head + cards + '</section>';
     }).join('');
 
-    list.innerHTML = html;
+    list.innerHTML = nudge + html;
 
     var totalWorkers = teams.reduce(function (n, t) { return n + t.workers.length; }, 0);
     $('sumPresent').textContent = present;
@@ -654,6 +675,8 @@
   // ── backup / restore ───────────────────────────────────
 
   function doBackup() {
+    // deliberately without state.sync — a backup file must not carry the
+    // company code around in someone's WhatsApp
     var payload = JSON.stringify({
       app: 'tikita',
       version: SCHEMA_VERSION,
@@ -690,7 +713,15 @@
       state.workers = Array.isArray(data.workers) ? data.workers : [];
       state.records = (data.records && typeof data.records === 'object') ? data.records : {};
       ui.siteId = state.sites.length ? state.sites[0].id : null;
+      state.sites.forEach(function (x) { TikitaSync.touch('sites', x.id); });
+      state.workers.forEach(function (x) { TikitaSync.touch('workers', x.id); });
+      Object.keys(state.records).forEach(function (day) {
+        Object.keys(state.records[day]).forEach(function (w) {
+          TikitaSync.touch('marks', TikitaSync.markKey(day, w));
+        });
+      });
       save();
+      TikitaSync.schedule();
       render();
       toast('Backup restored.');
     };
@@ -701,7 +732,7 @@
 
   function setView(name) {
     ui.view = name;
-    ['today', 'workers', 'export'].forEach(function (v) {
+    ['today', 'workers', 'export', 'sync'].forEach(function (v) {
       $('view-' + v).hidden = (v !== name);
     });
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
@@ -721,7 +752,66 @@
     }
     if (ui.view === 'today') renderToday();
     else if (ui.view === 'workers') renderWorkers();
+    else if (ui.view === 'sync') renderSync();
     else renderExport();
+  }
+
+  // ── view: sync ─────────────────────────────────────────
+
+  function agoText(iso) {
+    if (!iso) return '';
+    var secs = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+    if (secs < 60) return 'just now';
+    var mins = Math.round(secs / 60);
+    if (mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+    return shortDate(dateKey(new Date(iso)));
+  }
+
+  function renderSyncChip(st) {
+    var dot = $('syncDot');
+    var text = $('syncChipText');
+    dot.className = 'dot';
+
+    if (!st.connected) { text.textContent = 'This phone only'; return; }
+    if (st.syncing) { dot.classList.add('busy'); text.textContent = 'Syncing…'; return; }
+    if (st.error) { dot.classList.add('error'); text.textContent = 'Not synced'; return; }
+    if (st.pending) {
+      dot.classList.add('pending');
+      text.textContent = st.pending + ' waiting';
+      return;
+    }
+    dot.classList.add('ok');
+    text.textContent = 'Synced';
+  }
+
+  function renderSync() {
+    var st = TikitaSync.status();
+
+    $('connectCard').hidden = st.connected;
+    $('syncActions').hidden = !st.connected;
+
+    var line = $('syncStatusLine');
+    var sub = $('syncSubLine');
+
+    if (!st.connected) {
+      line.textContent = 'This phone only';
+      sub.textContent = 'Records stay on this device. Other phones will not see them, ' +
+                        'and you will not see theirs.';
+      return;
+    }
+
+    if (st.syncing) line.textContent = 'Syncing…';
+    else if (st.error) line.textContent = 'Could not sync';
+    else if (st.pending) line.textContent = st.pending + (st.pending === 1 ? ' change waiting' : ' changes waiting');
+    else line.textContent = 'Up to date';
+
+    var bits = ['Connected to ' + (st.company || 'your team') + '.'];
+    if (st.error) bits.push(st.error);
+    else if (!st.online) bits.push('No signal — changes will go up when you are back in range.');
+    if (st.lastSyncedAt) bits.push('Last synced ' + agoText(st.lastSyncedAt) + '.');
+    sub.textContent = bits.join(' ');
   }
 
   // ── events ─────────────────────────────────────────────
@@ -752,6 +842,7 @@
       if (!btn) return;
 
       if (btn.dataset.act === 'goto-workers') { setView('workers'); return; }
+      if (btn.dataset.act === 'goto-sync') { setView('sync'); return; }
 
       if (btn.dataset.act === 'team-present') {
         markTeam(btn.closest('[data-site]').dataset.site);
@@ -809,7 +900,7 @@
       state.sites.push(site);
       ui.siteId = site.id;
       input.value = '';
-      save();
+      changed('sites', site.id);
       render();
     });
 
@@ -821,9 +912,10 @@
       var input = form.querySelector('input');
       var name = input.value.trim();
       if (!name) return;
-      state.workers.push({ id: uid(), siteId: block.dataset.site, name: name, active: true });
+      var worker = { id: uid(), siteId: block.dataset.site, name: name, active: true };
+      state.workers.push(worker);
       input.value = '';
-      save();
+      changed('workers', worker.id);
       renderWorkers();
       input.focus();
     });
@@ -837,8 +929,8 @@
 
       if (act === 'rename-site') {
         var site = siteById(block.dataset.site);
-        var name = prompt('Site name', site.name);
-        if (name && name.trim()) { site.name = name.trim(); save(); render(); }
+        var name = prompt('Team name', site.name);
+        if (name && name.trim()) { site.name = name.trim(); changed('sites', site.id); render(); }
 
       } else if (act === 'delete-site') {
         var target = siteById(block.dataset.site);
@@ -850,16 +942,25 @@
         state.workers = state.workers.filter(function (w) { return w.siteId !== target.id; });
         state.sites = state.sites.filter(function (s) { return s.id !== target.id; });
         Object.keys(state.records).forEach(function (key) {
-          removedIds.forEach(function (id) { delete state.records[key][id]; });
+          removedIds.forEach(function (id) {
+            if (!state.records[key][id]) return;
+            delete state.records[key][id];
+            TikitaSync.touch('marks', TikitaSync.markKey(key, id));
+          });
           if (!Object.keys(state.records[key]).length) delete state.records[key];
         });
-        save();
+        removedIds.forEach(function (id) { TikitaSync.touch('workers', id); });
+        changed('sites', target.id);
         render();
 
       } else if (act === 'rename-worker') {
         var worker = workerById(line.dataset.worker);
         var newName = prompt('Worker name', worker.name);
-        if (newName && newName.trim()) { worker.name = newName.trim(); save(); renderWorkers(); }
+        if (newName && newName.trim()) {
+          worker.name = newName.trim();
+          changed('workers', worker.id);
+          renderWorkers();
+        }
 
       } else if (act === 'toggle-worker') {
         var w2 = workerById(line.dataset.worker);
@@ -869,7 +970,7 @@
           if (!confirm('Remove ' + w2.name + ' from the daily list?\n\nPast records are kept and still appear in exports.')) return;
           w2.active = false;
         }
-        save();
+        changed('workers', w2.id);
         renderWorkers();
       }
     });
@@ -903,6 +1004,42 @@
       updateExportPreview();
     });
     $('exportBtn').addEventListener('click', doExport);
+
+    $('syncChip').addEventListener('click', function () { setView('sync'); });
+
+    $('connectForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = $('connectBtn');
+      var hint = $('connectHint');
+      btn.disabled = true;
+      hint.textContent = 'Connecting…';
+      TikitaSync.connect($('codeInput').value).then(function (name) {
+        hint.textContent = '';
+        $('codeInput').value = '';
+        btn.disabled = false;
+        render();
+        toast('Connected to ' + name + '.');
+      }).catch(function (err) {
+        btn.disabled = false;
+        hint.textContent = err.message;
+      });
+    });
+
+    $('syncNowBtn').addEventListener('click', function () {
+      TikitaSync.sync().then(function () { renderSync(); });
+    });
+
+    $('disconnectBtn').addEventListener('click', function () {
+      if (!confirm('Disconnect this phone?\n\nRecords already on it stay put, but it ' +
+                   'will stop sharing with the other phones.')) return;
+      TikitaSync.disconnect();
+      render();
+    });
+
+    TikitaSync.onStatus(function (st) {
+      renderSyncChip(st);
+      if (ui.view === 'sync') renderSync();
+    });
 
     $('backupBtn').addEventListener('click', doBackup);
     $('restoreBtn').addEventListener('click', function () { $('restoreInput').click(); });
@@ -940,9 +1077,14 @@
   function clearWorkers(workers) {
     var day = state.records[ui.date];
     if (!day) return;
-    workers.forEach(function (w) { delete day[w.id]; });
+    workers.forEach(function (w) {
+      if (!day[w.id]) return;
+      delete day[w.id];
+      TikitaSync.touch('marks', TikitaSync.markKey(ui.date, w.id));
+    });
     if (!Object.keys(day).length) delete state.records[ui.date];
     save();
+    TikitaSync.schedule();
   }
 
   function clearPresetHighlight() {
@@ -974,6 +1116,13 @@
   // ── boot ───────────────────────────────────────────────
 
   load();
+
+  TikitaSync.init({
+    getState: function () { return state; },
+    save: save,
+    onRemoteChange: function () { render(); }
+  });
+
   wire();
   $('installBtn').addEventListener('click', function () {
     if (!deferredPrompt) return;
@@ -982,6 +1131,7 @@
     $('installBtn').hidden = true;
   });
   applyRangePreset('thisMonth');
+  renderSyncChip(TikitaSync.status());
   render();
 
   // keep the header date honest if the app sits open past midnight

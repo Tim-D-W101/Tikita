@@ -54,10 +54,37 @@ Each site gets a subtotal row, and there is an all-sites total when you export
 more than one. The top row and the worker column stay frozen as you scroll, and
 the totals are real numbers, so you can use them in formulas.
 
+## Several phones
+
+Tap the status chip in the top bar to open **Share with other phones**. Type the
+company code and that phone joins: same teams, same workers, same attendance
+records as every other phone with that code.
+
+The chip always says where things stand — *This phone only*, *Synced*,
+*3 waiting*, *Syncing…* or *Not synced*.
+
+Marking attendance never waits for signal. Changes are written to the phone
+first and queued; they go up the moment there is a connection, and other
+phones' changes come down at the same time. A phone that spends the whole day
+out of range loses nothing.
+
+Each supervisor is expected to mark their own team, so two people are not
+editing the same worker. Where two phones do touch the same record, the later
+change wins — the server decides which was later, so a phone with a wrong clock
+cannot overwrite newer work.
+
+Ask whoever set the app up for the code; it is deliberately not stored in this
+repository. Anyone holding it can read and change your attendance records, so
+treat it like a key. To move a company onto a fresh code, change `join_code` in
+the `workspaces` table and re-enter the new code on each phone.
+
 ## Back up your records
 
-Records live in this phone's browser storage. If you lose the phone, or clear
-the browser's site data, **the records go with it.**
+Once phones are connected, the shared database is itself a backup — a lost
+phone costs you nothing, because its records are on the others too.
+
+Until then, records live only in this phone's browser storage. If you lose the
+phone, or clear the browser's site data, **the records go with it.**
 
 **Export → Backup → Save backup** writes a small `.json` file holding
 everything. Send it to yourself the same way you send the Excel file, and keep
@@ -117,6 +144,7 @@ Any static file server will do; the app needs no build.
 | `index.html` | All three screens; they are shown and hidden, not routed |
 | `app.js` | State, storage, rendering, and the Excel layout |
 | `xlsx.js` | A small self-contained `.xlsx` writer (no library) |
+| `sync.js` | Talks to the shared database; queues changes made offline |
 | `sw.js` | Service worker — caches the app shell for offline use |
 | `manifest.webmanifest` | Makes it installable |
 
@@ -126,9 +154,32 @@ Data is one object in `localStorage` under `tikita.v1`:
 {
   sites:   [{ id, name }],
   workers: [{ id, siteId, name, active }],
-  records: { '2026-09-15': { workerId: { s: 'P', x: 1.5 } } }   // s: 'P'|'A', x: extra hours
+  records: { '2026-09-15': { workerId: { s: 'P', x: 1.5 } } },  // s: 'P'|'A', x: extra hours
+  sync:    { code, name, lastNow, lastSyncedAt, lastError },
+  pending: { sites: {}, workers: {}, marks: {} }                // owed to the other phones
 }
 ```
+
+The phone is always the source of truth for its own unsent changes: a pulled
+row is ignored while the same record sits in `pending`, so a sync can never
+undo something you just tapped.
+
+### The shared database
+
+Supabase Postgres. Tables are unreachable through the API — row level security
+is on with no policies — and all access goes through three `SECURITY DEFINER`
+functions that check the company code first:
+
+| Function | Does |
+|---|---|
+| `tikita_join(code)` | Confirms a code and returns the company name |
+| `tikita_pull(code, since)` | Everything changed since that moment |
+| `tikita_push(code, payload)` | Upserts this phone's changes, server-stamped |
+
+Deletions travel as tombstones (`deleted: true`) so a removal on one phone
+reaches the others instead of reappearing on the next sync. The project URL and
+publishable key in `sync.js` are public by design; the company code is the
+secret.
 
 Every change is written immediately — a phone can be locked or swiped away a
 moment after a tap, so nothing is deferred.

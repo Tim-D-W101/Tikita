@@ -8,7 +8,7 @@
  *
  * Bump CACHE when the asset list below changes.
  */
-var CACHE = 'tikita-v2';
+var CACHE = 'tikita-v3';
 var NETWORK_TIMEOUT = 2500;
 
 var ASSETS = [
@@ -17,6 +17,7 @@ var ASSETS = [
   './app.css',
   './app.js',
   './xlsx.js',
+  './sync.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
