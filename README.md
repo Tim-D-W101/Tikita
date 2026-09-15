@@ -66,13 +66,20 @@ the JSON backup is the one that can be loaded back into the app.
 The app is plain HTML, CSS and JavaScript with no build step and no
 dependencies — publish the files as they are.
 
-Pushing to the default branch is all it takes. The workflow in
-`.github/workflows/pages.yml` turns GitHub Pages on the first time it runs and
-publishes the site, so there is nothing to set up in repository settings. The
-run's summary shows the URL (`https://<user>.github.io/<repo>/`).
+Pages has to be switched on once by hand. A workflow's own token is not
+allowed to switch it on, so this cannot be automated from the repository.
 
-GitHub Pages needs the repository to be **public** unless the account is on a
-paid plan — on GitHub Free, a private repository cannot publish a Pages site.
+1. **The repository must be public**, unless the account is on a paid plan —
+   on GitHub Free, a private repository cannot publish a Pages site.
+   *Settings → General → Danger Zone → Change repository visibility.*
+2. *Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
+3. Push to the default branch, or re-run the latest workflow from the
+   **Actions** tab.
+
+The workflow in `.github/workflows/pages.yml` then publishes the site, and the
+run's summary shows the URL (`https://<user>.github.io/<repo>/`). Until step 2
+is done, that workflow fails at "Create Pages site" — that is expected, not a
+problem with the app.
 
 ### Installing on the phone
 
