@@ -132,6 +132,14 @@ strings, a fixed style table — which is all this app needs.
 
 ### Changing the app
 
-Edit the files and push. One thing to remember: **bump `CACHE` in `sw.js`**
-whenever you change `index.html`, `app.css`, `app.js` or `xlsx.js`, otherwise
-phones that already installed the app keep serving the old cached copy.
+Edit the files and push. The deploy workflow publishes them, and an installed
+phone picks the change up the next time it opens the app — no reinstall.
+
+The service worker is network-first with a 2.5 second timeout: with signal it
+always takes the newly deployed files, and without signal (or on a bad one) it
+falls back to the last cached copy instead of hanging. Attendance records are
+never touched by an update; they live in `localStorage`, separate from the
+cache.
+
+Bump `CACHE` in `sw.js` when you **add or remove** a file in the `ASSETS` list,
+so the pre-cache matches what the app actually loads.
