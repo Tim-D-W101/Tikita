@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tikita — Attendance</title>
+<meta name="description" content="Daily worker attendance register with Excel export.">
+<meta name="theme-color" content="#0f5c58" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1416" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tikita">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-inner">
+    <h1 class="brand">Tikita</h1>
+    <button type="button" class="icon-btn" id="installBtn" hidden aria-label="Install app">Install</button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ══════════════════ TODAY ══════════════════ -->
+  <section class="view" id="view-today" aria-labelledby="today-heading">
+    <h2 class="sr-only" id="today-heading">Daily register</h2>
+
+    <div class="datebar">
+      <button type="button" class="step-btn" id="prevDay" aria-label="Previous day">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="datebar-center">
+        <label class="date-label" for="datePicker">
+          <span id="dateText">—</span>
+          <input type="date" id="datePicker" aria-label="Pick a date">
+        </label>
+        <button type="button" class="link-btn" id="todayBtn" hidden>Jump to today</button>
+      </div>
+      <button type="button" class="step-btn" id="nextDay" aria-label="Next day">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="chiprow" id="siteChips" role="tablist" aria-label="Sites" hidden></div>
+
+    <div class="summary" id="summary" hidden>
+      <div class="summary-item"><b id="sumPresent">0</b><span>present</span></div>
+      <div class="summary-item"><b id="sumAbsent">0</b><span>absent</span></div>
+      <div class="summary-item"><b id="sumTodo">0</b><span>unmarked</span></div>
+      <div class="summary-item"><b id="sumExtra">0</b><span>extra hrs</span></div>
+    </div>
+
+    <div class="bulkrow" id="bulkRow" hidden>
+      <button type="button" class="ghost-btn" id="allPresentBtn">Mark all present</button>
+      <button type="button" class="ghost-btn danger" id="clearDayBtn">Clear day</button>
+    </div>
+
+    <div id="rosterList" class="roster"></div>
+  </section>
+
+  <!-- ══════════════════ WORKERS ══════════════════ -->
+  <section class="view" id="view-workers" hidden aria-labelledby="workers-heading">
+    <h2 class="view-title" id="workers-heading">Sites &amp; workers</h2>
+
+    <form class="addform" id="addSiteForm" autocomplete="off">
+      <input type="text" id="siteNameInput" placeholder="New site or team name" maxlength="60"
+             aria-label="New site name" required>
+      <button type="submit" class="primary-btn compact">Add site</button>
+    </form>
+
+    <div id="sitesAdmin"></div>
+  </section>
+
+  <!-- ══════════════════ EXPORT ══════════════════ -->
+  <section class="view" id="view-export" hidden aria-labelledby="export-heading">
+    <h2 class="view-title" id="export-heading">Export to Excel</h2>
+
+    <div class="card">
+      <h3 class="card-title">Period</h3>
+      <div class="chiprow tight" id="rangePresets">
+        <button type="button" class="chip" data-range="thisMonth">This month</button>
+        <button type="button" class="chip" data-range="lastMonth">Last month</button>
+        <button type="button" class="chip" data-range="last7">Last 7 days</button>
+        <button type="button" class="chip" data-range="last30">Last 30 days</button>
+      </div>
+      <div class="field-pair">
+        <label class="field">
+          <span>From</span>
+          <input type="date" id="exportFrom">
+        </label>
+        <label class="field">
+          <span>To</span>
+          <input type="date" id="exportTo">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Sites</h3>
+      <label class="field">
+        <span class="sr-only">Site</span>
+        <select id="exportSite"></select>
+      </label>
+    </div>
+
+    <p class="preview" id="exportPreview">—</p>
+
+    <button type="button" class="primary-btn wide" id="exportBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-icon"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+      Export Excel file
+    </button>
+    <p class="hint" id="exportHint"></p>
+
+    <div class="card muted-card">
+      <h3 class="card-title">Backup</h3>
+      <p class="card-note">
+        Records are stored on this phone only. If you lose the phone or clear the
+        browser, they go with it. Save a backup now and then, and keep it somewhere safe.
+      </p>
+      <div class="btn-row">
+        <button type="button" class="ghost-btn" id="backupBtn">Save backup</button>
+        <button type="button" class="ghost-btn" id="restoreBtn">Restore backup</button>
+        <input type="file" id="restoreInput" accept="application/json,.json" hidden>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="Sections">
+  <button type="button" class="tab is-active" data-view="today" role="tab" aria-selected="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 7-7"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
+    <span>Today</span>
+  </button>
+  <button type="button" class="tab" data-view="workers" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>
+    <span>Workers</span>
+  </button>
+  <button type="button" class="tab" data-view="export" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+    <span>Export</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="./xlsx.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
