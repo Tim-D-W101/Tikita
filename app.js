@@ -141,6 +141,28 @@
     return workersOfSite(ui.siteId, false);
   }
 
+  /* The teams shown on the Today screen: one, or all of them. */
+  function visibleTeams() {
+    var sites = (ui.siteId === ALL_SITES)
+      ? state.sites.slice()
+      : [siteById(ui.siteId)].filter(Boolean);
+    return sites.map(function (site) {
+      var workers = workersOfSite(site.id, false);
+      var present = 0, absent = 0, extra = 0;
+      workers.forEach(function (w) {
+        var mark = getMark(ui.date, w.id);
+        if (!mark) return;
+        if (mark.s === 'P') { present++; extra += mark.x || 0; }
+        else absent++;
+      });
+      return {
+        site: site, workers: workers,
+        present: present, absent: absent, extra: extra,
+        allPresent: workers.length > 0 && present === workers.length
+      };
+    });
+  }
+
   function getMark(key, workerId) {
     var day = state.records[key];
     return day ? day[workerId] : undefined;
@@ -197,70 +219,101 @@
 
     renderSiteChips();
 
-    var roster = currentRoster();
     var list = $('rosterList');
 
     if (!state.sites.length) {
       $('summary').hidden = true;
       $('bulkRow').hidden = true;
       list.innerHTML = emptyState(
-        'No sites yet',
-        'Add a site or team first — a yard, a block, a crew — then add the workers who belong to it.',
-        'Set up sites'
+        'No teams yet',
+        'Add a team or site first — a yard, a block, a crew — then add the workers who belong to it.',
+        'Set up teams'
       );
       return;
     }
 
-    if (!roster.length) {
+    var teams = visibleTeams();
+    var anyWorkers = teams.some(function (t) { return t.workers.length > 0; });
+
+    if (!anyWorkers) {
       $('summary').hidden = true;
       $('bulkRow').hidden = true;
       list.innerHTML = emptyState(
-        'No workers on this site',
-        'Add the people working at ' + escapeHtml(siteName(ui.siteId)) + ' and they will show up here every day.',
+        'No workers yet',
+        (ui.siteId === ALL_SITES)
+          ? 'Add the people who work on each team and they will show up here every day.'
+          : 'Add the people working on ' + escapeHtml(siteName(ui.siteId)) +
+            ' and they will show up here every day.',
         'Add workers'
       );
       return;
     }
 
     var present = 0, absent = 0, extra = 0;
-    var html = roster.map(function (w) {
-      var mark = getMark(ui.date, w.id);
-      var status = mark ? mark.s : null;
-      if (status === 'P') { present++; extra += mark.x || 0; }
-      if (status === 'A') absent++;
 
-      var rows = '<div class="worker" data-worker="' + w.id + '">' +
-        '<div class="worker-top">' +
-          '<div class="worker-name">' + escapeHtml(w.name) + '</div>' +
-          '<div class="seg" role="group" aria-label="' + escapeHtml(w.name) + ' attendance">' +
-            '<button type="button" data-act="mark" data-status="P"' +
-              (status === 'P' ? ' class="on-p" aria-pressed="true"' : ' aria-pressed="false"') + '>P</button>' +
-            '<button type="button" data-act="mark" data-status="A"' +
-              (status === 'A' ? ' class="on-a" aria-pressed="true"' : ' aria-pressed="false"') + '>A</button>' +
+    var html = teams.map(function (team) {
+      present += team.present;
+      absent += team.absent;
+      extra += team.extra;
+
+      var count = team.workers.length;
+      var head =
+        '<div class="team" data-site="' + team.site.id + '">' +
+          '<div class="team-info">' +
+            '<div class="team-name">' + escapeHtml(team.site.name) + '</div>' +
+            '<div class="team-count">' +
+              (count ? team.present + ' of ' + count + ' present' : 'No workers yet') +
+            '</div>' +
           '</div>' +
+          (count
+            ? '<button type="button" class="team-btn' + (team.allPresent ? ' on' : '') + '" ' +
+                'data-act="team-present" aria-pressed="' + team.allPresent + '">' +
+                '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>' +
+                '<span>All present</span>' +
+              '</button>'
+            : '') +
         '</div>';
 
-      if (status === 'P') {
-        var hours = mark.x || 0;
-        rows += '<div class="extra">' +
-          '<label for="x-' + w.id + '">Extra hours worked</label>' +
-          '<div class="stepper">' +
-            '<button type="button" data-act="minus" aria-label="Less extra time">−</button>' +
-            '<input id="x-' + w.id + '" type="number" inputmode="decimal" step="0.25" min="0" max="24" ' +
-              'value="' + hours + '" data-act="extra" aria-label="Extra hours for ' + escapeHtml(w.name) + '">' +
-            '<button type="button" data-act="plus" aria-label="More extra time">+</button>' +
-          '</div>' +
-        '</div>';
-      }
+      var cards = team.workers.map(function (w) {
+        var mark = getMark(ui.date, w.id);
+        var status = mark ? mark.s : null;
 
-      return rows + '</div>';
+        var card = '<div class="worker" data-worker="' + w.id + '">' +
+          '<div class="worker-top">' +
+            '<div class="worker-name">' + escapeHtml(w.name) + '</div>' +
+            '<div class="seg" role="group" aria-label="' + escapeHtml(w.name) + ' attendance">' +
+              '<button type="button" data-act="mark" data-status="P"' +
+                (status === 'P' ? ' class="on-p" aria-pressed="true"' : ' aria-pressed="false"') + '>P</button>' +
+              '<button type="button" data-act="mark" data-status="A"' +
+                (status === 'A' ? ' class="on-a" aria-pressed="true"' : ' aria-pressed="false"') + '>A</button>' +
+            '</div>' +
+          '</div>';
+
+        if (status === 'P') {
+          var hours = mark.x || 0;
+          card += '<div class="extra">' +
+            '<label for="x-' + w.id + '">Extra hours worked</label>' +
+            '<div class="stepper">' +
+              '<button type="button" data-act="minus" aria-label="Less extra time">\u2212</button>' +
+              '<input id="x-' + w.id + '" type="number" inputmode="decimal" step="0.25" min="0" max="24" ' +
+                'value="' + hours + '" data-act="extra" aria-label="Extra hours for ' + escapeHtml(w.name) + '">' +
+              '<button type="button" data-act="plus" aria-label="More extra time">+</button>' +
+            '</div>' +
+          '</div>';
+        }
+
+        return card + '</div>';
+      }).join('');
+
+      return '<section class="team-block">' + head + cards + '</section>';
     }).join('');
 
     list.innerHTML = html;
 
+    var totalWorkers = teams.reduce(function (n, t) { return n + t.workers.length; }, 0);
     $('sumPresent').textContent = present;
     $('sumAbsent').textContent = absent;
-    $('sumTodo').textContent = roster.length - present - absent;
+    $('sumTodo').textContent = totalWorkers - present - absent;
     $('sumExtra').textContent = round2(extra);
     $('summary').hidden = false;
     $('bulkRow').hidden = false;
@@ -282,7 +335,9 @@
     var row = $('siteChips');
     if (state.sites.length < 2) { row.hidden = true; row.innerHTML = ''; return; }
     row.hidden = false;
-    row.innerHTML = state.sites.map(function (s) {
+
+    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(state.sites);
+    row.innerHTML = chips.map(function (s) {
       return '<button type="button" class="chip' + (s.id === ui.siteId ? ' is-active' : '') +
         '" role="tab" aria-selected="' + (s.id === ui.siteId) + '" data-site="' + s.id + '">' +
         escapeHtml(s.name) + '</button>';
@@ -659,7 +714,9 @@
   }
 
   function render() {
-    if (!ui.siteId || !siteById(ui.siteId)) {
+    var validSelection = (ui.siteId === ALL_SITES && state.sites.length > 1) ||
+                         (ui.siteId && siteById(ui.siteId));
+    if (!validSelection) {
       ui.siteId = state.sites.length ? state.sites[0].id : null;
     }
     if (ui.view === 'today') renderToday();
@@ -696,6 +753,11 @@
 
       if (btn.dataset.act === 'goto-workers') { setView('workers'); return; }
 
+      if (btn.dataset.act === 'team-present') {
+        markTeam(btn.closest('[data-site]').dataset.site);
+        return;
+      }
+
       var card = btn.closest('[data-worker]');
       if (!card) return;
       var workerId = card.dataset.worker;
@@ -720,21 +782,20 @@
     });
 
     $('allPresentBtn').addEventListener('click', function () {
-      currentRoster().forEach(function (w) {
-        if (!getMark(ui.date, w.id)) setMark(ui.date, w.id, 'P');
+      var marked = 0;
+      visibleTeams().forEach(function (team) {
+        team.workers.forEach(function (w) {
+          if (!getMark(ui.date, w.id)) { setMark(ui.date, w.id, 'P'); marked++; }
+        });
       });
       renderToday();
-      toast('Everyone not yet marked is now present.');
+      toast(marked ? 'Marked ' + marked + ' more present.' : 'Everyone is already marked.');
     });
 
     $('clearDayBtn').addEventListener('click', function () {
-      if (!confirm('Clear all marks for ' + longDate(ui.date) + ' on this site?')) return;
-      var day = state.records[ui.date];
-      if (day) {
-        currentRoster().forEach(function (w) { delete day[w.id]; });
-        if (!Object.keys(day).length) delete state.records[ui.date];
-        save();
-      }
+      var scope = (ui.siteId === ALL_SITES) ? 'every team' : siteName(ui.siteId);
+      if (!confirm('Clear all marks for ' + longDate(ui.date) + ' on ' + scope + '?')) return;
+      clearWorkers(visibleTeams().reduce(function (all, t) { return all.concat(t.workers); }, []));
       renderToday();
     });
 
@@ -849,6 +910,39 @@
       if (e.target.files && e.target.files[0]) doRestore(e.target.files[0]);
       e.target.value = '';
     });
+  }
+
+  /*
+   * One tap for a whole crew. Tapping again when everyone is already present
+   * clears the team, behind a confirm — the same toggle the per-worker
+   * buttons have, but a whole team is worth asking about.
+   */
+  function markTeam(siteId) {
+    var team = null;
+    visibleTeams().forEach(function (t) { if (t.site.id === siteId) team = t; });
+    if (!team || !team.workers.length) return;
+
+    if (team.allPresent) {
+      if (!confirm('Clear all marks for ' + team.site.name + ' on ' + longDate(ui.date) + '?')) return;
+      clearWorkers(team.workers);
+      renderToday();
+      return;
+    }
+
+    team.workers.forEach(function (w) {
+      var mark = getMark(ui.date, w.id);
+      if (!mark || mark.s !== 'P') setMark(ui.date, w.id, 'P');
+    });
+    renderToday();
+    toast(team.site.name + ': all ' + team.workers.length + ' present.');
+  }
+
+  function clearWorkers(workers) {
+    var day = state.records[ui.date];
+    if (!day) return;
+    workers.forEach(function (w) { delete day[w.id]; });
+    if (!Object.keys(day).length) delete state.records[ui.date];
+    save();
   }
 
   function clearPresetHighlight() {

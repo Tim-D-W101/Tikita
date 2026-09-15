@@ -11,14 +11,22 @@ your own device — there is no server and no account.
 
 ## Using it day to day
 
-**Today** — the register. Pick the date (it opens on today), pick the site, then
-tap **P** or **A** for each worker. Tapping the choice again clears it, so a
+**Today** — the register. Pick the date (it opens on today), pick a team, or
+**All teams** to see every crew on one screen.
+
+Each team has a header with an **All present** button: one tap marks that whole
+crew present. That is normally the fastest way in — tap the team, then switch
+the few absentees to **A**. The header shows *"2 of 3 present"* so you can see
+at a glance which crews are done. When a whole team is already present the
+button turns green; tapping it then clears that team, after a confirm.
+
+Individual workers are **P** / **A**. Tapping the choice again clears it, so a
 mis-tap is easy to undo. When someone is marked present an **extra hours** field
 appears under their name; leave it at 0 for a normal day, or use −/+ (half-hour
 steps) or type a number for overtime.
 
-**Mark all present** fills in everyone not yet marked, which is usually the
-fastest way in: tap it, then switch the few absentees to **A**.
+**Fill in the rest present** marks everyone still unmarked, across whichever
+teams are on screen.
 
 **Workers** — your sites and crews. Add a site first, then add workers to it.
 *Remove* takes a worker off the daily list but keeps their past records, and
