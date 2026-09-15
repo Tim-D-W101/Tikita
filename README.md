@@ -66,11 +66,10 @@ the JSON backup is the one that can be loaded back into the app.
 The app is plain HTML, CSS and JavaScript with no build step and no
 dependencies — publish the files as they are.
 
-1. In the repository, go to **Settings → Pages**.
-2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Push to `main`. The workflow in `.github/workflows/pages.yml` publishes the
-   site, and the run's summary shows the URL
-   (`https://<user>.github.io/<repo>/`).
+Push to `main` — that is all. The workflow in `.github/workflows/pages.yml`
+turns GitHub Pages on the first time it runs and publishes the site, so there
+is nothing to set up in repository settings. The run's summary shows the URL
+(`https://<user>.github.io/<repo>/`).
 
 ### Installing on the phone
 
