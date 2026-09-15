@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # claude/sharp-darwin-jf6xu9 is this repository's default branch.
+    # main is listed too so publishing keeps working if the default moves.
+    branches: [claude/sharp-darwin-jf6xu9, main]
   workflow_dispatch:
 
 permissions:
