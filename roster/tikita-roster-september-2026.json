@@ -1,0 +1,687 @@
+{
+  "app": "tikita",
+  "version": 1,
+  "savedAt": "2026-09-16T06:56:12.038Z",
+  "note": "Sites and workers transcribed from the September 2026 paper register. No attendance records.",
+  "sites": [
+    {
+      "id": "site-loc-bell",
+      "name": "Loc Bell"
+    },
+    {
+      "id": "site-flx",
+      "name": "FLX"
+    },
+    {
+      "id": "site-gled",
+      "name": "Gled"
+    },
+    {
+      "id": "site-mposa",
+      "name": "Mposa"
+    },
+    {
+      "id": "site-wshop",
+      "name": "Wshop"
+    },
+    {
+      "id": "site-group-1",
+      "name": "Group 1"
+    },
+    {
+      "id": "site-tog",
+      "name": "Tog"
+    },
+    {
+      "id": "site-anties",
+      "name": "Anties"
+    },
+    {
+      "id": "site-group-2",
+      "name": "Group 2"
+    },
+    {
+      "id": "site-garden-chaps",
+      "name": "Garden chaps"
+    },
+    {
+      "id": "site-group-3",
+      "name": "Group 3"
+    },
+    {
+      "id": "site-group-4",
+      "name": "Group 4"
+    },
+    {
+      "id": "site-weedicide",
+      "name": "Weedicide"
+    },
+    {
+      "id": "site-cane",
+      "name": "Cane"
+    },
+    {
+      "id": "site-loc",
+      "name": "Loc"
+    },
+    {
+      "id": "site-group-5",
+      "name": "Group 5"
+    }
+  ],
+  "workers": [
+    {
+      "id": "wkr-loc-bell-01",
+      "siteId": "site-loc-bell",
+      "name": "Bhekekhaya",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-bell-02",
+      "siteId": "site-loc-bell",
+      "name": "Muziwendoda Dlamini",
+      "active": true
+    },
+    {
+      "id": "wkr-flx-01",
+      "siteId": "site-flx",
+      "name": "Sabelo",
+      "active": true
+    },
+    {
+      "id": "wkr-flx-02",
+      "siteId": "site-flx",
+      "name": "Uyifiso Christopher",
+      "active": true
+    },
+    {
+      "id": "wkr-gled-01",
+      "siteId": "site-gled",
+      "name": "Musawenkosi Mathenjwa",
+      "active": true
+    },
+    {
+      "id": "wkr-gled-02",
+      "siteId": "site-gled",
+      "name": "Simphiwe Dladla",
+      "active": true
+    },
+    {
+      "id": "wkr-mposa-01",
+      "siteId": "site-mposa",
+      "name": "Bruce Nsibande",
+      "active": true
+    },
+    {
+      "id": "wkr-mposa-02",
+      "siteId": "site-mposa",
+      "name": "Bongumusa Myeni",
+      "active": true
+    },
+    {
+      "id": "wkr-mposa-03",
+      "siteId": "site-mposa",
+      "name": "Vusi Sithole",
+      "active": true
+    },
+    {
+      "id": "wkr-mposa-04",
+      "siteId": "site-mposa",
+      "name": "Thabiso",
+      "active": true
+    },
+    {
+      "id": "wkr-wshop-01",
+      "siteId": "site-wshop",
+      "name": "Bongani Ngcobo",
+      "active": true
+    },
+    {
+      "id": "wkr-wshop-02",
+      "siteId": "site-wshop",
+      "name": "Bongumusa Mngomezulu",
+      "active": true
+    },
+    {
+      "id": "wkr-wshop-03",
+      "siteId": "site-wshop",
+      "name": "Mfanekiso",
+      "active": true
+    },
+    {
+      "id": "wkr-wshop-04",
+      "siteId": "site-wshop",
+      "name": "Scelo",
+      "active": true
+    },
+    {
+      "id": "wkr-wshop-05",
+      "siteId": "site-wshop",
+      "name": "Siphamandla",
+      "active": true
+    },
+    {
+      "id": "wkr-group-1-01",
+      "siteId": "site-group-1",
+      "name": "Thulani Myeni",
+      "active": true
+    },
+    {
+      "id": "wkr-group-1-02",
+      "siteId": "site-group-1",
+      "name": "Siyabonga Mthembu",
+      "active": true
+    },
+    {
+      "id": "wkr-group-1-03",
+      "siteId": "site-group-1",
+      "name": "Nkanyiso Mkhwanazi",
+      "active": true
+    },
+    {
+      "id": "wkr-group-1-04",
+      "siteId": "site-group-1",
+      "name": "Thokozani Zuma",
+      "active": true
+    },
+    {
+      "id": "wkr-group-1-05",
+      "siteId": "site-group-1",
+      "name": "Msawenkosi Mthembu",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-01",
+      "siteId": "site-tog",
+      "name": "Busisiwe Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-02",
+      "siteId": "site-tog",
+      "name": "Celiwe Mathe",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-03",
+      "siteId": "site-tog",
+      "name": "Dudu",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-04",
+      "siteId": "site-tog",
+      "name": "Fikile",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-05",
+      "siteId": "site-tog",
+      "name": "Hleziphi",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-06",
+      "siteId": "site-tog",
+      "name": "Jabu",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-07",
+      "siteId": "site-tog",
+      "name": "Lungile",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-08",
+      "siteId": "site-tog",
+      "name": "Mantombi",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-09",
+      "siteId": "site-tog",
+      "name": "Nomusa Ngwane",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-10",
+      "siteId": "site-tog",
+      "name": "Senzeni",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-11",
+      "siteId": "site-tog",
+      "name": "Sibongile",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-12",
+      "siteId": "site-tog",
+      "name": "Sphiwe",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-13",
+      "siteId": "site-tog",
+      "name": "Thandeka Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-14",
+      "siteId": "site-tog",
+      "name": "Thandiwe",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-15",
+      "siteId": "site-tog",
+      "name": "Khetiwe",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-16",
+      "siteId": "site-tog",
+      "name": "Samukelisiwe",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-17",
+      "siteId": "site-tog",
+      "name": "Snenhlanhla",
+      "active": true
+    },
+    {
+      "id": "wkr-tog-18",
+      "siteId": "site-tog",
+      "name": "Nothando",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-01",
+      "siteId": "site-anties",
+      "name": "Nokuthula",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-02",
+      "siteId": "site-anties",
+      "name": "Sabathile",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-03",
+      "siteId": "site-anties",
+      "name": "Zama",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-04",
+      "siteId": "site-anties",
+      "name": "Gugu",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-05",
+      "siteId": "site-anties",
+      "name": "Phiwe",
+      "active": true
+    },
+    {
+      "id": "wkr-anties-06",
+      "siteId": "site-anties",
+      "name": "Thabile",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-01",
+      "siteId": "site-group-2",
+      "name": "Ntokozo",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-02",
+      "siteId": "site-group-2",
+      "name": "Mabukani",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-03",
+      "siteId": "site-group-2",
+      "name": "Augusto",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-04",
+      "siteId": "site-group-2",
+      "name": "Balele",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-05",
+      "siteId": "site-group-2",
+      "name": "Musa Mkhobela",
+      "active": true
+    },
+    {
+      "id": "wkr-group-2-06",
+      "siteId": "site-group-2",
+      "name": "Nkosinathi Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-garden-chaps-01",
+      "siteId": "site-garden-chaps",
+      "name": "Andile",
+      "active": true
+    },
+    {
+      "id": "wkr-garden-chaps-02",
+      "siteId": "site-garden-chaps",
+      "name": "Bongani Tembe",
+      "active": true
+    },
+    {
+      "id": "wkr-garden-chaps-03",
+      "siteId": "site-garden-chaps",
+      "name": "Nhlakanipho",
+      "active": true
+    },
+    {
+      "id": "wkr-garden-chaps-04",
+      "siteId": "site-garden-chaps",
+      "name": "Sifiso",
+      "active": true
+    },
+    {
+      "id": "wkr-garden-chaps-05",
+      "siteId": "site-garden-chaps",
+      "name": "Siyabonga Mbilane",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-01",
+      "siteId": "site-group-3",
+      "name": "Bhekumuzi",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-02",
+      "siteId": "site-group-3",
+      "name": "Bongani Mngomezulu",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-03",
+      "siteId": "site-group-3",
+      "name": "Nduduzo Mhlongo",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-04",
+      "siteId": "site-group-3",
+      "name": "Nkanyiso Gumede",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-05",
+      "siteId": "site-group-3",
+      "name": "Siboniso Mathenjwa",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-06",
+      "siteId": "site-group-3",
+      "name": "Sibusiso Maphumulo",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-07",
+      "siteId": "site-group-3",
+      "name": "Siyabonga Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-08",
+      "siteId": "site-group-3",
+      "name": "Thabani Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-09",
+      "siteId": "site-group-3",
+      "name": "Mthokozisi Mthembu",
+      "active": true
+    },
+    {
+      "id": "wkr-group-3-10",
+      "siteId": "site-group-3",
+      "name": "Luckyboy",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-01",
+      "siteId": "site-group-4",
+      "name": "Ayanda",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-02",
+      "siteId": "site-group-4",
+      "name": "Moses",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-03",
+      "siteId": "site-group-4",
+      "name": "Siboniso Mngomezulu",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-04",
+      "siteId": "site-group-4",
+      "name": "Thandukwazi",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-05",
+      "siteId": "site-group-4",
+      "name": "Thembinkosi Mbhamali",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-06",
+      "siteId": "site-group-4",
+      "name": "Thembinkosi Mfekayi",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-07",
+      "siteId": "site-group-4",
+      "name": "Zakhele Phiri",
+      "active": true
+    },
+    {
+      "id": "wkr-group-4-08",
+      "siteId": "site-group-4",
+      "name": "Thobelani Mbhamali",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-01",
+      "siteId": "site-weedicide",
+      "name": "Mbongiseni",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-02",
+      "siteId": "site-weedicide",
+      "name": "Sithulisa",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-03",
+      "siteId": "site-weedicide",
+      "name": "Msizi",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-04",
+      "siteId": "site-weedicide",
+      "name": "Nkosinathi Ncamparala",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-05",
+      "siteId": "site-weedicide",
+      "name": "Sakhile Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-06",
+      "siteId": "site-weedicide",
+      "name": "Samukelo Msa Ncube",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-07",
+      "siteId": "site-weedicide",
+      "name": "Sicelo Mabuyakhulu",
+      "active": true
+    },
+    {
+      "id": "wkr-weedicide-08",
+      "siteId": "site-weedicide",
+      "name": "Thembinkosi Mahlaba",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-01",
+      "siteId": "site-cane",
+      "name": "Mthokozisi Ntombela",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-02",
+      "siteId": "site-cane",
+      "name": "Themba Mthethwa",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-03",
+      "siteId": "site-cane",
+      "name": "Simthembile Gwaji",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-04",
+      "siteId": "site-cane",
+      "name": "Sihle Gumede",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-05",
+      "siteId": "site-cane",
+      "name": "Mbongeni",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-06",
+      "siteId": "site-cane",
+      "name": "Nkosinathi Mathenjwa",
+      "active": true
+    },
+    {
+      "id": "wkr-cane-07",
+      "siteId": "site-cane",
+      "name": "Moses Msani",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-01",
+      "siteId": "site-loc",
+      "name": "Sikho",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-02",
+      "siteId": "site-loc",
+      "name": "Bhekinkosi",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-03",
+      "siteId": "site-loc",
+      "name": "Nkosikhona",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-04",
+      "siteId": "site-loc",
+      "name": "Mandla Ngwane",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-05",
+      "siteId": "site-loc",
+      "name": "Sakhile Makhathini",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-06",
+      "siteId": "site-loc",
+      "name": "Vusi Mngomezulu",
+      "active": true
+    },
+    {
+      "id": "wkr-loc-07",
+      "siteId": "site-loc",
+      "name": "Mthenjwa",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-01",
+      "siteId": "site-group-5",
+      "name": "Bongani Ngubane",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-02",
+      "siteId": "site-group-5",
+      "name": "Njabulo Sibiya",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-03",
+      "siteId": "site-group-5",
+      "name": "Mondli",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-04",
+      "siteId": "site-group-5",
+      "name": "Zakhele Ngwenya",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-05",
+      "siteId": "site-group-5",
+      "name": "Nkosiyapha Mzimela",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-06",
+      "siteId": "site-group-5",
+      "name": "Philangenkosi Mbhamali",
+      "active": true
+    },
+    {
+      "id": "wkr-group-5-07",
+      "siteId": "site-group-5",
+      "name": "Pawulose",
+      "active": true
+    }
+  ],
+  "records": {}
+}

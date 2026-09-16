@@ -29,8 +29,10 @@ steps) or type a number for overtime.
 teams are on screen.
 
 **Workers** — your sites and crews. Add a site first, then add workers to it.
-*Remove* takes a worker off the daily list but keeps their past records, and
-they still appear in exports; *Restore* puts them back.
+*Rename* changes a site or a worker's name at any time and keeps all their
+records, so a crew can go in under a placeholder name and be named properly
+later. *Remove* takes a worker off the daily list but keeps their past records,
+and they still appear in exports; *Restore* puts them back.
 
 **Export** — pick a period and a site, then **Export Excel file**. On a phone
 this opens the share sheet, so you can send the file to yourself on WhatsApp,
@@ -94,6 +96,22 @@ a mishap. Restoring replaces whatever is currently on the device.
 Exporting the Excel file regularly is itself a decent backup of the numbers;
 the JSON backup is the one that can be loaded back into the app.
 
+## Setting up a list of workers
+
+Typing a large crew in on a phone is slow, so a list can be prepared as a file
+and loaded in one go. **Export → Add a ready-made list → Add sites & workers**
+takes a backup file and adds the sites and workers this phone does not have
+yet. Unlike *Restore backup* it changes nothing else: attendance records are
+ignored, and a site or worker whose name is already on this phone is skipped
+rather than added twice. Loading the same file again is therefore harmless.
+
+`roster/tikita-roster-september-2026.json` in this repository is the crew
+transcribed from the September 2026 paper register — 16 sites, 102 workers, no
+records. Download it on the phone and load it with that button. Five of its
+sites are named `Group 1` to `Group 5` because the register's margin gives no
+heading for those crews; rename them on the **Workers** screen once you know
+what they are called.
+
 ---
 
 ## Hosting it
@@ -146,6 +164,7 @@ Any static file server will do; the app needs no build.
 | `xlsx.js` | A small self-contained `.xlsx` writer (no library) |
 | `sync.js` | Talks to the shared database; queues changes made offline |
 | `sw.js` | Service worker — caches the app shell for offline use |
+| `roster/` | Prepared worker lists, loaded through *Add sites & workers* |
 | `manifest.webmanifest` | Makes it installable |
 
 Data is one object in `localStorage` under `tikita.v1`:
