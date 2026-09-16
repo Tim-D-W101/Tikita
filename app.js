@@ -129,6 +129,12 @@
 
   // ── data helpers ───────────────────────────────────────
 
+  // Sites and workers are matched across devices and files by name, not id —
+  // two phones that both typed "Cane" mean the same crew.
+  function nameKey(value) {
+    return String(value == null ? '' : value).trim().toLowerCase();
+  }
+
   function siteById(id) {
     for (var i = 0; i < state.sites.length; i++) {
       if (state.sites[i].id === id) return state.sites[i];
@@ -728,6 +734,85 @@
     reader.readAsText(file);
   }
 
+  /*
+   * Takes only the sites and workers out of a backup file and adds the ones
+   * this phone does not have yet. Attendance records in the file are ignored
+   * and nothing already here is altered, so it is safe on a phone that is
+   * already in use — and safe to run twice, because a name that is already
+   * on the list is skipped rather than duplicated.
+   */
+  function doImportRoster(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (err) {
+        toast('That file is not a Tikita roster.');
+        return;
+      }
+      if (!data || data.app !== 'tikita' || !Array.isArray(data.sites)) {
+        toast('That file is not a Tikita roster.');
+        return;
+      }
+
+      var taken = {};
+      state.sites.forEach(function (s) { taken[s.id] = 1; });
+      state.workers.forEach(function (w) { taken[w.id] = 1; });
+
+      var siteHere = {};
+      state.sites.forEach(function (s) { siteHere[nameKey(s.name)] = s.id; });
+
+      var newSites = [];
+      var siteIdFor = {};   // the file's site id -> the site id on this phone
+      data.sites.forEach(function (s) {
+        if (!s || !s.id || !nameKey(s.name)) return;
+        if (siteHere[nameKey(s.name)]) { siteIdFor[s.id] = siteHere[nameKey(s.name)]; return; }
+        var id = taken[s.id] ? uid() : s.id;
+        taken[id] = 1;
+        siteHere[nameKey(s.name)] = id;
+        siteIdFor[s.id] = id;
+        newSites.push({ id: id, name: String(s.name).trim() });
+      });
+
+      // a removed worker still counts as being here, or a restore-then-import
+      // would put a second copy of them on the list
+      var workerHere = {};
+      state.workers.forEach(function (w) { workerHere[w.siteId + '|' + nameKey(w.name)] = 1; });
+
+      var newWorkers = [];
+      (Array.isArray(data.workers) ? data.workers : []).forEach(function (w) {
+        if (!w || !w.id || !nameKey(w.name)) return;
+        var siteId = siteIdFor[w.siteId];
+        if (!siteId) return;
+        var seat = siteId + '|' + nameKey(w.name);
+        if (workerHere[seat]) return;
+        var id = taken[w.id] ? uid() : w.id;
+        taken[id] = 1;
+        workerHere[seat] = 1;
+        newWorkers.push({ id: id, siteId: siteId, name: String(w.name).trim(), active: true });
+      });
+
+      if (!newSites.length && !newWorkers.length) {
+        toast('Every site and worker in that file is already on this phone.');
+        return;
+      }
+      if (!confirm('Add ' + newSites.length + ' site(s) and ' + newWorkers.length +
+          ' worker(s)?\n\nNothing already on this phone is changed, and no ' +
+          'attendance records are touched.')) return;
+
+      state.sites = state.sites.concat(newSites);
+      state.workers = state.workers.concat(newWorkers);
+      newSites.forEach(function (s) { TikitaSync.touch('sites', s.id); });
+      newWorkers.forEach(function (w) { TikitaSync.touch('workers', w.id); });
+      save();
+      TikitaSync.schedule();
+      setView('workers');
+      toast('Added ' + newWorkers.length + ' worker(s) in ' + newSites.length + ' site(s).');
+    };
+    reader.readAsText(file);
+  }
+
   // ── routing ────────────────────────────────────────────
 
   function setView(name) {
@@ -1043,6 +1128,11 @@
 
     $('backupBtn').addEventListener('click', doBackup);
     $('restoreBtn').addEventListener('click', function () { $('restoreInput').click(); });
+    $('importRosterBtn').addEventListener('click', function () { $('importRosterInput').click(); });
+    $('importRosterInput').addEventListener('change', function (e) {
+      if (e.target.files && e.target.files[0]) doImportRoster(e.target.files[0]);
+      e.target.value = '';
+    });
     $('restoreInput').addEventListener('change', function (e) {
       if (e.target.files && e.target.files[0]) doRestore(e.target.files[0]);
       e.target.value = '';
