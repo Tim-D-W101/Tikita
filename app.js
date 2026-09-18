@@ -1,9 +1,14 @@
 /*
  * Tikita — daily worker attendance register.
  *
- * All data lives in this device's localStorage; nothing is sent anywhere.
- * Export builds an .xlsx in the browser and hands it to the share sheet
- * (phone) or downloads it (desktop).
+ * Data lives in this device's localStorage and, once a company code is
+ * entered, is mirrored to the other devices through sync.js. Export builds
+ * an .xlsx in the browser and hands it to the share sheet (phone) or
+ * downloads it (desktop).
+ *
+ * The same files run on a phone and on the PC that keeps the records. On a
+ * wide screen the register lays itself out in columns and a Records tab
+ * appears, for correcting a whole month at once.
  */
 (function () {
   'use strict';
@@ -15,6 +20,21 @@
   var WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                     'August', 'September', 'October', 'November', 'December'];
+
+  var VIEWS = ['today', 'records', 'workers', 'export', 'sync'];
+
+  /*
+   * Running inside the desktop shell (desktop/main.js). Only wording depends
+   * on it — the wide layout and the Records tab follow the window's width, so
+   * a browser on the same PC gets them too.
+   */
+  var IS_DESKTOP = !!window.tikitaDesktop;
+  var DEVICE = IS_DESKTOP ? 'PC' : 'phone';
+  var WIDE = window.matchMedia ? window.matchMedia('(min-width: 900px)') : null;
+
+  function wideMode() { return !!(WIDE && WIDE.matches); }
 
   // ── state ──────────────────────────────────────────────
 
@@ -33,7 +53,9 @@
     siteId: null,
     exportFrom: null,
     exportTo: null,
-    exportSite: ALL_SITES
+    exportSite: ALL_SITES,
+    month: null,          // 'YYYY-MM' shown on the Records screen
+    recordSite: ALL_SITES
   };
 
   function load() {
@@ -121,6 +143,34 @@
     var end = parseKey(toKey);
     var guard = 0;
     while (cursor <= end && guard++ < 1000) {
+      out.push(dateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return out;
+  }
+
+  function monthKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function thisMonth() { return monthKey(new Date()); }
+
+  function shiftMonth(key, months) {
+    var p = key.split('-');
+    return monthKey(new Date(Number(p[0]), Number(p[1]) - 1 + months, 1));
+  }
+
+  function monthLabel(key) {
+    var p = key.split('-');
+    return MONTHS_FULL[Number(p[1]) - 1] + ' ' + p[0];
+  }
+
+  function monthDays(key) {
+    var p = key.split('-');
+    var month = Number(p[1]) - 1;
+    var cursor = new Date(Number(p[0]), month, 1);
+    var out = [];
+    while (cursor.getMonth() === month) {
       out.push(dateKey(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
@@ -268,8 +318,10 @@
     var present = 0, absent = 0, extra = 0;
     var nudge = TikitaSync.status().connected ? '' :
       '<div class="sync-nudge">' +
-        '<p>Records are kept on this phone only.</p>' +
-        '<button type="button" data-act="goto-sync">Share with other phones</button>' +
+        '<p>Records are kept on this ' + DEVICE + ' only.</p>' +
+        '<button type="button" data-act="goto-sync">' +
+          (IS_DESKTOP ? 'Share with the phones' : 'Share with other phones') +
+        '</button>' +
       '</div>';
 
     var html = teams.map(function (team) {
@@ -363,6 +415,184 @@
         '" role="tab" aria-selected="' + (s.id === ui.siteId) + '" data-site="' + s.id + '">' +
         escapeHtml(s.name) + '</button>';
     }).join('');
+  }
+
+  // ── view: records ──────────────────────────────────────
+
+  /*
+   * A whole month at once: workers down the side, days across the top — the
+   * same shape as the exported spreadsheet, so a mistake gets corrected where
+   * it was spotted. Offered on a wide screen only; a phone keeps the one-day
+   * register, which is what it is good at.
+   */
+  function renderRecords() {
+    if (!ui.month) ui.month = thisMonth();
+    $('monthText').textContent = monthLabel(ui.month);
+    $('thisMonthBtn').hidden = (ui.month === thisMonth());
+    renderRecordChips();
+
+    var wrap = $('recordsGrid');
+
+    // Editing happens inside the grid, so a redraw must not throw away where
+    // the user was looking or what they had focused.
+    var scroller = wrap.querySelector('.grid-wrap');
+    var keepLeft = scroller ? scroller.scrollLeft : 0;
+    var keepTop = scroller ? scroller.scrollTop : 0;
+    var active = document.activeElement;
+    var refocus = (active && active.dataset && active.dataset.d && wrap.contains(active))
+      ? '[data-act="' + active.dataset.act + '"][data-w="' + active.dataset.w +
+        '"][data-d="' + active.dataset.d + '"]'
+      : null;
+
+    var days = monthDays(ui.month);
+    var groups = recordGroups(days);
+
+    if (!groups.length) {
+      $('recordsHelp').hidden = true;
+      wrap.innerHTML = emptyState(
+        'Nothing here yet',
+        state.workers.length
+          ? 'No workers on this selection in ' + monthLabel(ui.month) + '. Try another month or another team.'
+          : 'Add your teams and the people on them, and their days will show up here.',
+        'Set up workers');
+      return;
+    }
+
+    var today = todayKey();
+
+    var head = '<tr><th class="corner" scope="col">Worker</th>' +
+      days.map(function (d) {
+        var dt = parseKey(d);
+        var cls = 'day';
+        if (dt.getDay() === 0 || dt.getDay() === 6) cls += ' weekend';
+        if (d === today) cls += ' is-today';
+        return '<th class="' + cls + '" scope="col">' +
+          '<span class="dnum">' + dt.getDate() + '</span>' +
+          '<span class="dwd">' + WEEKDAYS[dt.getDay()] + '</span></th>';
+      }).join('') +
+      '<th class="tot" scope="col">P</th>' +
+      '<th class="tot" scope="col">A</th>' +
+      '<th class="tot" scope="col">Extra</th></tr>';
+
+    var body = groups.map(function (group) {
+      var gp = 0, ga = 0, gx = 0;
+
+      var rows = group.workers.map(function (w) {
+        var p = 0, a = 0, x = 0;
+        var cells = days.map(function (d) {
+          var mark = getMark(d, w.id);
+          if (mark && mark.s === 'P') { p++; x += mark.x || 0; }
+          else if (mark && mark.s === 'A') { a++; }
+          return recordCell(w, d, mark, d === today);
+        }).join('');
+        gp += p; ga += a; gx += x;
+
+        return '<tr' + (w.active === false ? ' class="gone"' : '') + '>' +
+          '<th class="name" scope="row">' + escapeHtml(w.name) +
+            (w.active === false ? '<span class="tag">removed</span>' : '') + '</th>' +
+          cells +
+          '<td class="tot">' + p + '</td>' +
+          '<td class="tot">' + a + '</td>' +
+          '<td class="tot">' + (x ? round2(x) : '') + '</td></tr>';
+      }).join('');
+
+      return '<tr class="group"><th class="name" scope="row">' + escapeHtml(group.site.name) + '</th>' +
+          '<td colspan="' + (days.length + 3) + '"></td></tr>' +
+        rows +
+        '<tr class="subtotal"><th class="name" scope="row">Total</th>' +
+          '<td colspan="' + days.length + '"></td>' +
+          '<td class="tot">' + gp + '</td>' +
+          '<td class="tot">' + ga + '</td>' +
+          '<td class="tot">' + (gx ? round2(gx) : '') + '</td></tr>';
+    }).join('');
+
+    wrap.innerHTML = '<div class="grid-wrap"><table class="grid">' +
+      '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+    $('recordsHelp').hidden = false;
+
+    scroller = wrap.querySelector('.grid-wrap');
+    scroller.scrollLeft = keepLeft;
+    scroller.scrollTop = keepTop;
+    if (refocus) {
+      var again = wrap.querySelector(refocus);
+      if (again) again.focus();
+    }
+  }
+
+  function recordCell(worker, day, mark, isToday) {
+    var status = mark ? mark.s : null;
+    var what = (status === 'P') ? 'Present' : (status === 'A') ? 'Absent' : 'Not marked';
+    var label = what + ' — ' + worker.name + ', ' + shortDate(day);
+    var dow = parseKey(day).getDay();
+
+    var out = '<td class="c' + (isToday ? ' is-today' : (dow === 0 || dow === 6) ? ' weekend' : '') + '">' +
+      '<button type="button" class="cell' +
+        (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : '') + '" ' +
+        'data-act="cycle" data-w="' + worker.id + '" data-d="' + day + '" ' +
+        'title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' +
+      (status || '') + '</button>';
+
+    if (status === 'P') {
+      var hours = mark.x || 0;
+      out += '<button type="button" class="xb' + (hours ? ' set' : '') + '" ' +
+        'data-act="hours" data-w="' + worker.id + '" data-d="' + day + '" ' +
+        'title="Extra hours" aria-label="Extra hours for ' + escapeHtml(worker.name) +
+        ' on ' + shortDate(day) + '">' + (hours ? round2(hours) : '+') + '</button>';
+    }
+    return out + '</td>';
+  }
+
+  /*
+   * Removed workers are listed only where they still have marks in the month,
+   * which is the same rule the export follows — their past is history, not
+   * something to hide.
+   */
+  function recordGroups(days) {
+    var sites = (ui.recordSite === ALL_SITES)
+      ? state.sites.slice()
+      : [siteById(ui.recordSite)].filter(Boolean);
+
+    return sites.map(function (site) {
+      var workers = workersOfSite(site.id, true).filter(function (w) {
+        if (w.active !== false) return true;
+        return days.some(function (d) { return !!getMark(d, w.id); });
+      });
+      return { site: site, workers: workers };
+    }).filter(function (g) { return g.workers.length > 0; });
+  }
+
+  function renderRecordChips() {
+    var row = $('recordChips');
+    if (state.sites.length < 2) { row.hidden = true; row.innerHTML = ''; return; }
+    row.hidden = false;
+
+    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(state.sites);
+    row.innerHTML = chips.map(function (s) {
+      return '<button type="button" class="chip' + (s.id === ui.recordSite ? ' is-active' : '') +
+        '" role="tab" aria-selected="' + (s.id === ui.recordSite) + '" data-site="' +
+        escapeHtml(s.id) + '">' + escapeHtml(s.name) + '</button>';
+    }).join('');
+  }
+
+  /*
+   * blank → P → A → blank, the same three states the register has. From 'A',
+   * setMark is handed the mark already there, which is how it clears.
+   */
+  function cycleMark(day, workerId) {
+    setMark(day, workerId, getMark(day, workerId) ? 'A' : 'P');
+  }
+
+  function editHours(day, workerId) {
+    var mark = getMark(day, workerId);
+    if (!mark || mark.s !== 'P') return;
+    var worker = workerById(workerId);
+    var typed = prompt('Extra hours for ' + (worker ? worker.name : 'this worker') +
+      ' on ' + shortDate(day) + '\n\nLeave 0 for a normal day.', String(mark.x || 0));
+    if (typed === null) return;
+    var hours = parseFloat(typed);
+    if (isNaN(hours)) { toast('That is not a number of hours.'); return; }
+    setExtra(day, workerId, hours);
+    renderRecords();
   }
 
   // ── view: workers ──────────────────────────────────────
@@ -731,8 +961,9 @@
   // ── routing ────────────────────────────────────────────
 
   function setView(name) {
+    if (name === 'records' && !wideMode()) name = 'today';
     ui.view = name;
-    ['today', 'workers', 'export', 'sync'].forEach(function (v) {
+    VIEWS.forEach(function (v) {
       $('view-' + v).hidden = (v !== name);
     });
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (tab) {
@@ -750,7 +981,10 @@
     if (!validSelection) {
       ui.siteId = state.sites.length ? state.sites[0].id : null;
     }
+    if (ui.recordSite !== ALL_SITES && !siteById(ui.recordSite)) ui.recordSite = ALL_SITES;
+
     if (ui.view === 'today') renderToday();
+    else if (ui.view === 'records') renderRecords();
     else if (ui.view === 'workers') renderWorkers();
     else if (ui.view === 'sync') renderSync();
     else renderExport();
@@ -774,7 +1008,7 @@
     var text = $('syncChipText');
     dot.className = 'dot';
 
-    if (!st.connected) { text.textContent = 'This phone only'; return; }
+    if (!st.connected) { text.textContent = 'This ' + DEVICE + ' only'; return; }
     if (st.syncing) { dot.classList.add('busy'); text.textContent = 'Syncing…'; return; }
     if (st.error) { dot.classList.add('error'); text.textContent = 'Not synced'; return; }
     if (st.pending) {
@@ -796,9 +1030,9 @@
     var sub = $('syncSubLine');
 
     if (!st.connected) {
-      line.textContent = 'This phone only';
-      sub.textContent = 'Records stay on this device. Other phones will not see them, ' +
-                        'and you will not see theirs.';
+      line.textContent = 'This ' + DEVICE + ' only';
+      sub.textContent = 'Records stay on this device. The other devices will not see ' +
+                        'them, and you will not see theirs.';
       return;
     }
 
@@ -809,7 +1043,9 @@
 
     var bits = ['Connected to ' + (st.company || 'your team') + '.'];
     if (st.error) bits.push(st.error);
-    else if (!st.online) bits.push('No signal — changes will go up when you are back in range.');
+    else if (!st.online) bits.push(IS_DESKTOP
+      ? 'No connection — changes will go up when the internet is back.'
+      : 'No signal — changes will go up when you are back in range.');
     if (st.lastSyncedAt) bits.push('Last synced ' + agoText(st.lastSyncedAt) + '.');
     sub.textContent = bits.join(' ');
   }
@@ -827,6 +1063,39 @@
     $('todayBtn').addEventListener('click', function () { ui.date = todayKey(); renderToday(); });
     $('datePicker').addEventListener('change', function (e) {
       if (e.target.value) { ui.date = e.target.value; renderToday(); }
+    });
+
+    // records
+    $('prevMonth').addEventListener('click', function () {
+      ui.month = shiftMonth(ui.month || thisMonth(), -1); renderRecords();
+    });
+    $('nextMonth').addEventListener('click', function () {
+      ui.month = shiftMonth(ui.month || thisMonth(), 1); renderRecords();
+    });
+    $('thisMonthBtn').addEventListener('click', function () {
+      ui.month = thisMonth(); renderRecords();
+    });
+
+    $('recordChips').addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-site]');
+      if (!chip) return;
+      ui.recordSite = chip.dataset.site;
+      renderRecords();
+    });
+
+    $('recordsGrid').addEventListener('click', function (e) {
+      var btn = e.target.closest('button');
+      if (!btn) return;
+
+      if (btn.dataset.act === 'goto-workers') { setView('workers'); return; }
+      if (!btn.dataset.w || !btn.dataset.d) return;
+
+      if (btn.dataset.act === 'hours') {
+        editHours(btn.dataset.d, btn.dataset.w);
+      } else if (btn.dataset.act === 'cycle') {
+        cycleMark(btn.dataset.d, btn.dataset.w);
+        renderRecords();
+      }
     });
 
     $('siteChips').addEventListener('click', function (e) {
@@ -1030,11 +1299,19 @@
     });
 
     $('disconnectBtn').addEventListener('click', function () {
-      if (!confirm('Disconnect this phone?\n\nRecords already on it stay put, but it ' +
+      if (!confirm('Disconnect this ' + DEVICE + '?\n\nRecords already on it stay put, but it ' +
                    'will stop sharing with the other phones.')) return;
       TikitaSync.disconnect();
       render();
     });
+
+    if (WIDE) {
+      var onWidth = function () { if (!wideMode() && ui.view === 'records') setView('today'); };
+      if (WIDE.addEventListener) WIDE.addEventListener('change', onWidth);
+      else WIDE.addListener(onWidth);   // older WebKit
+    }
+
+    watchDateRollover();
 
     TikitaSync.onStatus(function (st) {
       renderSyncChip(st);
@@ -1100,6 +1377,41 @@
     return null;
   }
 
+  /*
+   * The PC that keeps the records is left running for days. Follow midnight
+   * so it is not still showing yesterday's register in the morning — but only
+   * while the screen is on the day that has just rolled over, never when
+   * someone has deliberately gone back to an earlier date.
+   */
+  function watchDateRollover() {
+    var anchor = todayKey();
+
+    function check() {
+      var now = todayKey();
+      if (now === anchor) return;
+      var following = (ui.date === anchor);
+      anchor = now;
+      if (!following) return;
+      ui.date = now;
+      if (ui.view === 'today') renderToday();
+    }
+
+    setInterval(check, 60000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) check();
+    });
+  }
+
+  /* On a PC, 'this phone' is simply wrong. */
+  function applyDeviceWording() {
+    if (!IS_DESKTOP) return;
+    document.documentElement.classList.add('is-desktop');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-desktop]'), function (el) {
+      el.textContent = el.dataset.desktop;
+    });
+  }
+
   // ── install prompt ─────────────────────────────────────
 
   var deferredPrompt = null;
@@ -1116,6 +1428,7 @@
   // ── boot ───────────────────────────────────────────────
 
   load();
+  applyDeviceWording();
 
   TikitaSync.init({
     getState: function () { return state; },
@@ -1133,11 +1446,6 @@
   applyRangePreset('thisMonth');
   renderSyncChip(TikitaSync.status());
   render();
-
-  // keep the header date honest if the app sits open past midnight
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && ui.view === 'today') renderToday();
-  });
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {

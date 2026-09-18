@@ -5,7 +5,8 @@ present or absent, add any extra hours they worked, and when you need the
 records on a PC you export them as a real Excel file.
 
 It installs to your home screen, works with no signal, and keeps all data on
-your own device — there is no server and no account.
+your own device. It also installs on the PC that keeps the records, where it
+shows a whole month at a time and earlier days can be corrected.
 
 ---
 
@@ -36,6 +37,21 @@ they still appear in exports; *Restore* puts them back.
 this opens the share sheet, so you can send the file to yourself on WhatsApp,
 email or Drive and open it on your PC. On a PC it downloads straight away.
 
+**Records** — a month at a time, on a wide screen only. Workers down the left,
+one column per day across the top, laid out like the exported spreadsheet.
+Click a day to change it — blank → **P** → **A** → blank — and use the small
+button along the bottom of a present day to set extra hours. Present, absent
+and extra-hours totals stay pinned to the right as the days scroll, with a
+subtotal per team.
+
+This is where a mistake gets fixed: a day marked on the wrong worker, a crew
+someone forgot to mark, an overtime figure that came in late. Corrections go
+to the phones like any other change. Workers you have removed still appear in
+the months where they have records.
+
+A phone does not show this tab — it keeps the one-day register, which is what
+it is good at.
+
 ## What the Excel file looks like
 
 One sheet, laid out like a payroll timesheet: workers down the left, one column
@@ -54,11 +70,12 @@ Each site gets a subtotal row, and there is an all-sites total when you export
 more than one. The top row and the worker column stay frozen as you scroll, and
 the totals are real numbers, so you can use them in formulas.
 
-## Several phones
+## Several phones, and the PC
 
 Tap the status chip in the top bar to open **Share with other phones**. Type the
-company code and that phone joins: same teams, same workers, same attendance
-records as every other phone with that code.
+company code and that device joins: same teams, same workers, same attendance
+records as every other device with that code. The PC joins the same way, with
+the same code, and from then on holds a full copy of everything.
 
 The chip always says where things stand — *This phone only*, *Synced*,
 *3 waiting*, *Syncing…* or *Not synced*.
@@ -80,8 +97,9 @@ the `workspaces` table and re-enter the new code on each phone.
 
 ## Back up your records
 
-Once phones are connected, the shared database is itself a backup — a lost
-phone costs you nothing, because its records are on the others too.
+Once the devices are connected, the shared database is itself a backup — a
+lost phone costs you nothing, because its records are on the PC and the other
+phones too.
 
 Until then, records live only in this phone's browser storage. If you lose the
 phone, or clear the browser's site data, **the records go with it.**
@@ -129,6 +147,24 @@ After that it opens from the home-screen icon like any other app and works
 offline. It must be served over `https://` — opening the files directly from
 disk (`file://`) disables installation and offline support.
 
+## The PC that keeps the records
+
+Once the site is published, the PC joins like any other device — it just gets
+a bigger screen and the Records tab.
+
+**A desktop app.** `desktop/` builds a Windows installer: a window that opens
+the published site, with its own icon in the Start menu. Actions → *Build
+desktop app* produces the `.exe`; `desktop/README.md` covers installing it and
+what the menu does. Nothing about the register is bundled inside it, so a
+change pushed here is on the PC the next time the window is opened.
+
+**Or nothing at all.** Edge is already on the PC and installs the site as a
+desktop app by itself: open the address, then *… → Apps → Install this site as
+an app*. Same window, same icon, same automatic updates, nothing to build.
+
+Either way, enter the company code once and the PC holds every record the
+phones hold.
+
 ## Running it locally
 
 ```sh
@@ -147,6 +183,7 @@ Any static file server will do; the app needs no build.
 | `sync.js` | Talks to the shared database; queues changes made offline |
 | `sw.js` | Service worker — caches the app shell for offline use |
 | `manifest.webmanifest` | Makes it installable |
+| `desktop/` | The Windows shell — a window onto the published site |
 
 Data is one object in `localStorage` under `tikita.v1`:
 
@@ -192,7 +229,12 @@ strings, a fixed style table — which is all this app needs.
 ### Changing the app
 
 Edit the files and push. The deploy workflow publishes them, and an installed
-phone picks the change up the next time it opens the app — no reinstall.
+phone — or the PC — picks the change up the next time it opens the app. No
+reinstall, on either.
+
+The desktop shell holds no copy of the register, only the address of it, which
+is what makes that true on the PC as well. `desktop/` only needs rebuilding
+when a file inside `desktop/` itself changes.
 
 The service worker is network-first with a 2.5 second timeout: with signal it
 always takes the newly deployed files, and without signal (or on a bad one) it

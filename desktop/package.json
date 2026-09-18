@@ -1,0 +1,46 @@
+{
+  "name": "tikita-desktop",
+  "productName": "Tikita",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop window onto the published Tikita attendance register.",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.tikita.attendance",
+    "productName": "Tikita",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "setup.html"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Tikita"
+    },
+    "mac": { "target": ["dmg"], "icon": "build/icon.png", "category": "public.app-category.business" },
+    "linux": { "target": ["AppImage"], "icon": "build/icon.png", "category": "Office" }
+  }
+}

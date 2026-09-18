@@ -1,0 +1,40 @@
+# Builds the Windows installer for the desktop shell.
+#
+# The shell only wraps the published site, so this is needed rarely: when
+# desktop/ changes, or the first time somebody needs the .exe. Changes to the
+# register itself reach an installed PC on their own, through Pages.
+#
+# Run it from the Actions tab, or push a tag like desktop-v1.0.0 to attach the
+# installer to a release.
+name: Build desktop app
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tikita-windows-installer
+          path: desktop/dist/*.exe
+          if-no-files-found: error
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: desktop/dist/*.exe
