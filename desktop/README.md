@@ -15,15 +15,13 @@ this folder changes.
 
 ## Getting the installer
 
-**From GitHub** — Actions → *Build desktop app* → **Run workflow**. When it
-finishes, download the `tikita-windows-installer` artifact and unzip it. To
-keep a permanent copy instead, push a tag:
+**From GitHub** — the build runs by itself whenever anything in `desktop/`
+changes, and can also be started from Actions → *Build desktop app* → **Run
+workflow**. Open the run, and under **Artifacts** download
+`tikita-windows-installer`; it is a zip holding the `.exe`.
 
-```sh
-git tag desktop-v1.0.0 && git push origin desktop-v1.0.0
-```
-
-The installer is then attached to a release.
+Artifacts are kept for 90 days. For a copy that does not expire, attach the
+`.exe` to a release on the repository's Releases page.
 
 **On a Windows PC with Node installed**
 

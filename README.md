@@ -153,9 +153,9 @@ Once the site is published, the PC joins like any other device — it just gets
 a bigger screen and the Records tab.
 
 **A desktop app.** `desktop/` builds a Windows installer: a window that opens
-the published site, with its own icon in the Start menu. Actions → *Build
-desktop app* produces the `.exe`; `desktop/README.md` covers installing it and
-what the menu does. Nothing about the register is bundled inside it, so a
+the published site, with its own icon in the Start menu. The *Build desktop
+app* workflow produces the `.exe` as a run artifact; `desktop/README.md`
+covers downloading it, installing it, and what the menu does. Nothing about the register is bundled inside it, so a
 change pushed here is on the PC the next time the window is opened.
 
 **Or nothing at all.** Edge is already on the PC and installs the site as a
