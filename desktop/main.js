@@ -15,7 +15,7 @@ const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron')
 const path = require('path');
 const fs = require('fs');
 
-const DEFAULT_URL = 'https://tim-d-w101.github.io/tikita/';
+const DEFAULT_URL = 'https://tim-d-w101.github.io/Tikita/';
 
 const CONFIG_FILE = () => path.join(app.getPath('userData'), 'config.json');
 const WINDOW_FILE = () => path.join(app.getPath('userData'), 'window.json');
@@ -132,6 +132,18 @@ function createWindow() {
     showSetup(description || ('Error ' + code));
   });
 
+  /*
+   * A wrong address usually does not fail to load — GitHub Pages answers 404
+   * with a perfectly good page, which would otherwise sit in this window
+   * looking like the app had broken. Treat any error status as "wrong
+   * address" and go back to the setup screen, which can fix it.
+   */
+  win.webContents.on('did-navigate', (event, url, httpResponseCode, httpStatusText) => {
+    if (url.startsWith('file://') || httpResponseCode < 400) return;
+    showSetup('The address answered ' + httpResponseCode +
+      (httpStatusText ? ' ' + httpStatusText : '') + '.');
+  });
+
   ['resize', 'move'].forEach((e) => win.on(e, rememberBounds));
   win.on('close', rememberBounds);
   win.on('closed', () => { win = null; });
@@ -158,6 +170,11 @@ ipcMain.handle('tikita:set-url', (event, url) => {
   const clean = String(url || '').trim();
   if (!/^https?:\/\/.+/i.test(clean)) return { ok: false, message: 'That does not look like a web address.' };
   setAppUrl(clean);
+  // Saved, but say so rather than appearing to do nothing if something is
+  // overriding it from the environment.
+  if ((process.env.TIKITA_URL || '').trim()) {
+    return { ok: false, message: 'Saved, but TIKITA_URL is set in the environment and wins. Clear it and reopen Tikita.' };
+  }
   load();
   return { ok: true };
 });

@@ -5,6 +5,8 @@
   "private": true,
   "description": "Desktop window onto the published Tikita attendance register.",
   "license": "MIT",
+  "author": "Tikita",
+  "repository": "https://github.com/Tim-D-W101/Tikita",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
