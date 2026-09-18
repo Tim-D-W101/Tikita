@@ -69,6 +69,34 @@
     <div id="rosterList" class="roster"></div>
   </section>
 
+  <!-- ══════════════════ RECORDS ══════════════════ -->
+  <section class="view" id="view-records" hidden aria-labelledby="records-heading">
+    <h2 class="view-title" id="records-heading">Records</h2>
+
+    <div class="datebar">
+      <button type="button" class="step-btn" id="prevMonth" aria-label="Previous month">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="datebar-center">
+        <div class="month-text" id="monthText">—</div>
+        <button type="button" class="link-btn" id="thisMonthBtn" hidden>Jump to this month</button>
+      </div>
+      <button type="button" class="step-btn" id="nextMonth" aria-label="Next month">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="chiprow" id="recordChips" role="tablist" aria-label="Sites"></div>
+
+    <div id="recordsGrid"></div>
+
+    <p class="hint" id="recordsHelp" hidden>
+      Click a day to change it: blank → <b>P</b> → <b>A</b> → blank.
+      On a day marked present, the small button beside it sets extra hours.
+      Every correction syncs to the phones like any other change.
+    </p>
+  </section>
+
   <!-- ══════════════════ WORKERS ══════════════════ -->
   <section class="view" id="view-workers" hidden aria-labelledby="workers-heading">
     <h2 class="view-title" id="workers-heading">Sites &amp; workers</h2>
@@ -125,7 +153,7 @@
     <div class="card muted-card">
       <h3 class="card-title">Backup</h3>
       <p class="card-note">
-        Records are stored on this phone only. If you lose the phone or clear the
+        Records are stored on this device only. If you lose it or clear the
         browser, they go with it. Save a backup now and then, and keep it somewhere safe.
       </p>
       <div class="btn-row">
@@ -139,7 +167,7 @@
 
   <!-- ══════════════════ SYNC ══════════════════ -->
   <section class="view" id="view-sync" hidden aria-labelledby="sync-heading">
-    <h2 class="view-title" id="sync-heading">Share with other phones</h2>
+    <h2 class="view-title" id="sync-heading" data-desktop="Share with the phones">Share with other phones</h2>
 
     <div class="card" id="syncStatusCard">
       <h3 class="card-title">Status</h3>
@@ -152,10 +180,10 @@
     </div>
 
     <div class="card" id="connectCard">
-      <h3 class="card-title">Connect this phone</h3>
+      <h3 class="card-title" data-desktop="Connect this computer">Connect this phone</h3>
       <p class="card-note">
-        Type the company code. Every phone with the same code shares one set of
-        teams, workers and attendance records.
+        Type the company code. Every phone and PC with the same code shares one
+        set of teams, workers and attendance records.
       </p>
       <form id="connectForm" autocomplete="off">
         <label class="field">
@@ -172,10 +200,9 @@
     <div class="card muted-card">
       <h3 class="card-title">How it works</h3>
       <p class="card-note">
-        Marking attendance never needs signal. Changes are saved on this phone
-        straight away and go to the other phones the next time you have a
-        connection. Each supervisor marks their own team, so nobody overwrites
-        anyone else.
+        Marking attendance never needs signal. Changes are saved here straight
+        away and go to the other devices the next time there is a connection.
+        Each supervisor marks their own team, so nobody overwrites anyone else.
       </p>
     </div>
   </section>
@@ -186,6 +213,10 @@
   <button type="button" class="tab is-active" data-view="today" role="tab" aria-selected="true">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 7-7"/><path d="M20 12v7a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9"/></svg>
     <span>Today</span>
+  </button>
+  <button type="button" class="tab wide-only" data-view="records" role="tab" aria-selected="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M9 9v12M16 4v3M8 4v3"/></svg>
+    <span>Records</span>
   </button>
   <button type="button" class="tab" data-view="workers" role="tab" aria-selected="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>

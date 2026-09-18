@@ -23,6 +23,15 @@
   var OVERLAP_MS = 120000;
   var DEBOUNCE_MS = 2500;
 
+  /*
+   * A phone syncs when it is picked up, which is often enough for a phone.
+   * A PC is left open on the same screen all day, and would otherwise sit
+   * showing yesterday's answer until somebody clicked into it, so pull on a
+   * timer as well. Only while the window is actually on screen — a minimised
+   * one has nobody reading it.
+   */
+  var POLL_MS = 60000;
+
   var ctx = null;
   var running = false;
   var queued = false;
@@ -317,6 +326,11 @@
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) run(false);
     });
+
+    setInterval(function () {
+      if (document.hidden) return;
+      run(false);
+    }, POLL_MS);
 
     if (shape(state()).sync.code) setTimeout(function () { run(false); }, 600);
   }

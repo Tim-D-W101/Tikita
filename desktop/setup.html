@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Tikita — setup</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f6f7; --surface: #fff; --line: #dfe4e8;
+    --text: #16242a; --dim: #64757d; --accent: #0f5c58;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #0d1416; --surface: #151f22; --line: #2a383d;
+      --text: #e6edef; --dim: #93a4ab; --accent: #4fd1c5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    padding: 32px; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  .card {
+    width: 100%; max-width: 480px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px;
+  }
+  h1 { margin: 0 0 6px; font-size: 20px; font-weight: 650; }
+  p { margin: 0 0 16px; color: var(--dim); font-size: 14px; }
+  .why { color: #b3261e; }
+  @media (prefers-color-scheme: dark) { .why { color: #ff9188; } }
+  .why:empty { display: none; }
+  label { display: block; font-size: 12.5px; font-weight: 600; color: var(--dim); margin-bottom: 6px; }
+  input {
+    width: 100%; height: 46px; padding: 0 12px; font: inherit;
+    border: 1px solid var(--line); border-radius: 11px;
+    background: var(--bg); color: var(--text);
+  }
+  .row { display: flex; gap: 8px; margin-top: 16px; }
+  button {
+    flex: 1; height: 46px; border-radius: 11px; font: inherit;
+    font-weight: 650; cursor: pointer; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text);
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #06201f; } }
+  .note { margin: 18px 0 0; font-size: 12.5px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Where is Tikita published?</h1>
+    <p class="why" id="why"></p>
+    <p>
+      This window opens the published register. Whoever set the app up can give
+      you the address — it usually looks like
+      <code>https://someone.github.io/tikita/</code>.
+    </p>
+
+    <label for="url">App address</label>
+    <input type="url" id="url" spellcheck="false" placeholder="https://…">
+
+    <div class="row">
+      <button type="button" id="retry">Try again</button>
+      <button type="button" class="primary" id="open">Open Tikita</button>
+    </div>
+
+    <p class="note">
+      Already set up and just offline? <b>Try again</b> once the connection is
+      back — the last version of the app is kept on this PC, so it usually
+      opens anyway.
+    </p>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+  var input = document.getElementById('url');
+  var why = document.getElementById('why');
+
+  var params = new URLSearchParams(location.search);
+  input.value = params.get('url') || '';
+  var reason = params.get('reason');
+  if (reason) why.textContent = 'Could not open it: ' + reason;
+
+  if (window.tikitaSetup) {
+    window.tikitaSetup.getUrl().then(function (url) {
+      if (!input.value) input.value = url;
+    });
+  }
+
+  document.getElementById('open').addEventListener('click', function () {
+    if (!window.tikitaSetup) return;
+    window.tikitaSetup.setUrl(input.value).then(function (res) {
+      if (res && !res.ok) why.textContent = res.message;
+    });
+  });
+
+  document.getElementById('retry').addEventListener('click', function () {
+    if (window.tikitaSetup) window.tikitaSetup.retry();
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') document.getElementById('open').click();
+  });
+
+  input.focus();
+}());
+</script>
+</body>
+</html>

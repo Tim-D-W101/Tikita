@@ -1,0 +1,41 @@
+# Builds the Windows installer for the desktop shell.
+#
+# The shell only wraps the published site, so this runs rarely: only when
+# something in desktop/ changes. Changes to the register itself reach an
+# installed PC on their own, through Pages — they need no installer.
+#
+# The .exe comes out as a run artifact: Actions -> this run -> Artifacts ->
+# tikita-windows-installer. It can also be started by hand from the Actions
+# tab.
+name: Build desktop app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/desktop.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tikita-windows-installer
+          path: desktop/dist/*.exe
+          if-no-files-found: error
+          retention-days: 90

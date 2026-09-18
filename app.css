@@ -380,6 +380,188 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 @media (prefers-color-scheme: dark) { .toast { background: #2b393e; } }
 
+/* ── records grid ───────────────────────────────────────── */
+/*
+ * A month as a table: sticky day headers across the top, sticky worker names
+ * down the side. Only reachable on a wide screen — see the desktop block
+ * below, which is what puts the tab there.
+ */
+.month-text { font-size: 16.5px; font-weight: 650; }
+
+.grid-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.grid {
+  border-collapse: separate; border-spacing: 0;
+  font-size: 13px; font-variant-numeric: tabular-nums;
+}
+.grid th, .grid td {
+  margin: 0; padding: 0;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+/* header row */
+.grid thead th {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--surface-2);
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  padding: 5px 2px;
+}
+.grid thead .corner { z-index: 5; left: 0; text-align: left; padding-left: 10px; }
+.grid .day { width: 40px; min-width: 40px; }
+.grid .day.weekend { color: var(--text); background: var(--line); }
+.grid .day.is-today { background: var(--accent); color: #fff; }
+.grid .day.is-today .dwd { color: rgba(255, 255, 255, .8); }
+.grid .dnum { display: block; font-size: 12.5px; color: var(--text); }
+.grid .day.is-today .dnum { color: #fff; }
+.grid .dwd { display: block; font-size: 9.5px; font-weight: 600; }
+
+/* worker column */
+.grid .name {
+  position: sticky; left: 0; z-index: 2;
+  background: var(--surface);
+  min-width: 165px; max-width: 230px;
+  text-align: left; font-size: 13.5px; font-weight: 500;
+  padding: 5px 10px;
+}
+.grid tr.gone .name { color: var(--text-dim); }
+.tag {
+  display: inline-block; margin-left: 6px; padding: 0 4px;
+  border: 1px solid var(--line); border-radius: 4px;
+  font-size: 9px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--text-dim);
+}
+
+/* one day for one worker */
+.grid td.c { position: relative; width: 42px; min-width: 42px; }
+.grid td.c.weekend { background: var(--surface-2); }
+.grid td.c.is-today { background: var(--accent-soft); }
+/*
+ * The bottom strip is always reserved for the hours badge, whether or not
+ * there are hours, so nothing jumps when one is added and the P never sits
+ * under its own badge.
+ */
+.cell {
+  display: block; width: 100%; height: 38px; padding: 0 0 12px; border: 0;
+  background: none; font: inherit; font-size: 13px; font-weight: 700;
+  color: var(--text-dim); cursor: pointer;
+}
+.cell.on-p { background: var(--present-bg); color: var(--present); }
+.cell.on-a { background: var(--absent-bg); color: var(--absent); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* the strip along the bottom of a present day, which sets extra hours */
+.xb {
+  position: absolute; left: 2px; right: 2px; bottom: 2px;
+  height: 13px; padding: 0; border: 0; border-radius: 4px;
+  background: var(--surface-2); color: var(--text-dim);
+  font: inherit; font-size: 9.5px; font-weight: 700; line-height: 13px;
+  cursor: pointer; opacity: 0;
+}
+.xb.set { opacity: 1; background: var(--accent); color: var(--surface); }
+.grid td.c:hover .xb, .xb:focus { opacity: 1; }
+.xb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* group and total rows */
+.grid tr.group th, .grid tr.group td { background: var(--accent-soft); }
+.grid tr.group .name { color: var(--accent); font-weight: 700; font-size: 14px; }
+.grid tr.subtotal th, .grid tr.subtotal td { background: var(--surface-2); font-weight: 700; }
+
+/*
+ * The three totals stay pinned to the right while the days scroll under
+ * them — on a 31-day month they are the first thing you want to read.
+ */
+.grid .tot {
+  position: sticky; z-index: 2;
+  width: 54px; min-width: 54px; text-align: center;
+  background: var(--surface); font-weight: 600; padding: 4px 6px;
+}
+.grid .tot:nth-last-child(3) { right: 108px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(2) { right: 54px; }
+.grid .tot:last-child { right: 0; }
+.grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
+.grid tr.subtotal .tot { background: var(--surface-2); }
+
+/* ── wide screens ───────────────────────────────────────── */
+/*
+ * Phone-first up to here. On a monitor the tab bar becomes a side rail, the
+ * teams sit side by side instead of end to end, and the Records tab appears.
+ */
+.tab.wide-only { display: none; }
+
+@media (min-width: 900px) {
+  :root { --rail-w: 214px; --appbar-h: 68px; }
+
+  .tab.wide-only { display: flex; }
+
+  .tabbar {
+    top: var(--appbar-h); right: auto; bottom: 0;
+    width: var(--rail-w); z-index: 10;
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    gap: 4px; padding: 14px 10px;
+    border-top: 0; border-right: 1px solid var(--line);
+  }
+  .tab {
+    flex: none; flex-direction: row; justify-content: flex-start;
+    gap: 12px; height: 46px; padding: 0 14px;
+    border-radius: 11px; font-size: 14.5px;
+  }
+  .tab.is-active { background: var(--accent-soft); }
+
+  #main {
+    margin: 0 0 0 var(--rail-w);
+    max-width: 1460px;
+    padding: 22px 30px 56px;
+  }
+
+  .view-title { font-size: 23px; margin-bottom: 18px; }
+
+  /*
+   * Use the monitor: the team header keeps the full width and its workers
+   * flow into as many columns as fit, so a whole crew — or every crew — is
+   * on screen without scrolling.
+   */
+  .team-block {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 10px; align-items: start;
+  }
+  .team-block .team { grid-column: 1 / -1; }
+
+  .summary { max-width: 620px; }
+  .summary-item { padding: 12px 8px; }
+  .summary-item b { font-size: 23px; }
+  .summary-item span { font-size: 12px; }
+
+  .datebar, .bulkrow, .chiprow, .sync-nudge { max-width: 620px; }
+  #view-records .datebar, #view-records .chiprow { max-width: none; }
+  .toast { bottom: 24px; }
+
+  /* these screens are forms — they do not want to be 1400px wide */
+  #view-workers, #view-export, #view-sync { max-width: 720px; }
+}
+
+/* ── a mouse is present ─────────────────────────────────── */
+@media (hover: hover) {
+  .chip:hover, .step-btn:hover, .mini-btn:hover,
+  .ghost-btn:hover, .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab:hover { border: 0; }
+  .seg button:hover, .team-btn:hover, .stepper button:hover { border-color: var(--accent); }
+  .primary-btn:hover { filter: brightness(1.08); }
+  .cell:hover { box-shadow: inset 0 0 0 2px var(--accent); }
+  .xb:hover { background: var(--accent); color: var(--surface); }
+  .worker:hover { border-color: var(--line); box-shadow: var(--shadow); }
+}
+
+/* ── inside the desktop shell ───────────────────────────── */
+/* There is nothing to install — this is the installed thing. */
+.is-desktop #installBtn { display: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
   .step-btn:active, .seg button:active, .primary-btn:active, .ghost-btn:active { transform: none; }
