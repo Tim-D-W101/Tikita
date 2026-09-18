@@ -975,7 +975,29 @@
     render();
   }
 
+  /*
+   * A pull can land while a figure is being typed into the register. Redrawing
+   * then would wipe what was half typed, so hold the redraw until the field is
+   * left. Now that devices also pull on a timer, this is no longer rare.
+   */
+  var heldRender = false;
+
+  function renderFromRemote() {
+    var active = document.activeElement;
+    if (active && active.tagName === 'INPUT' && active.dataset.act === 'extra') {
+      if (!heldRender) {
+        heldRender = true;
+        active.addEventListener('blur', function () {
+          if (heldRender) render();
+        }, { once: true });
+      }
+      return;
+    }
+    render();
+  }
+
   function render() {
+    heldRender = false;
     var validSelection = (ui.siteId === ALL_SITES && state.sites.length > 1) ||
                          (ui.siteId && siteById(ui.siteId));
     if (!validSelection) {
@@ -1433,7 +1455,7 @@
   TikitaSync.init({
     getState: function () { return state; },
     save: save,
-    onRemoteChange: function () { render(); }
+    onRemoteChange: renderFromRemote
   });
 
   wire();
