@@ -54,12 +54,21 @@
 
     <div class="chiprow" id="siteChips" role="tablist" aria-label="Sites" hidden></div>
 
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="todaySearch" placeholder="Search workers or teams"
+             aria-label="Search workers or teams" autocomplete="off" spellcheck="false">
+      <button type="button" class="search-clear" data-act="clear-search" aria-label="Clear search" hidden>×</button>
+    </div>
+
     <div class="summary" id="summary" hidden>
       <div class="summary-item"><b id="sumPresent">0</b><span>present</span></div>
       <div class="summary-item"><b id="sumAbsent">0</b><span>absent</span></div>
       <div class="summary-item"><b id="sumTodo">0</b><span>unmarked</span></div>
       <div class="summary-item"><b id="sumExtra">0</b><span>extra hrs</span></div>
     </div>
+
+    <p class="filter-note" id="todayFilterNote" hidden></p>
 
     <div class="bulkrow" id="bulkRow" hidden>
       <button type="button" class="ghost-btn" id="allPresentBtn">Fill in the rest present</button>
@@ -88,6 +97,13 @@
 
     <div class="chiprow" id="recordChips" role="tablist" aria-label="Sites"></div>
 
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="recordSearch" placeholder="Search workers or teams"
+             aria-label="Search workers or teams" autocomplete="off" spellcheck="false">
+      <button type="button" class="search-clear" data-act="clear-search" aria-label="Clear search" hidden>×</button>
+    </div>
+
     <div id="recordsGrid"></div>
 
     <p class="hint" id="recordsHelp" hidden>
@@ -106,6 +122,13 @@
              aria-label="New site name" required>
       <button type="submit" class="primary-btn compact">Add site</button>
     </form>
+
+    <div class="searchbar">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="search-icon"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="workerSearch" placeholder="Search workers or teams"
+             aria-label="Search workers or teams" autocomplete="off" spellcheck="false">
+      <button type="button" class="search-clear" data-act="clear-search" aria-label="Clear search" hidden>×</button>
+    </div>
 
     <div id="sitesAdmin"></div>
   </section>

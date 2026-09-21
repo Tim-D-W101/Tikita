@@ -13,7 +13,8 @@ shows a whole month at a time and earlier days can be corrected.
 ## Using it day to day
 
 **Today** — the register. Pick the date (it opens on today), pick a team, or
-**All teams** to see every crew on one screen.
+**All teams** to see every crew on one screen. On a PC the row of teams drags
+sideways with the mouse, or scrolls under the wheel; on a phone it swipes.
 
 Each team has a header with an **All present** button: one tap marks that whole
 crew present. That is normally the fastest way in — tap the team, then switch
@@ -26,8 +27,21 @@ mis-tap is easy to undo. When someone is marked present an **extra hours** field
 appears under their name; leave it at 0 for a normal day, or use −/+ (half-hour
 steps) or type a number for overtime.
 
+Once someone is marked, **Add a note** appears under their name — *left early*,
+*off sick*, *rain stopped work*. It hangs off that day's mark, so it goes to
+the other devices with it and shows on the Records screen. Switching P to A
+keeps the note; clearing the mark altogether takes it with them. Notes stay in
+the app: the Excel export does not carry them yet.
+
 **Fill in the rest present** marks everyone still unmarked, across whichever
 teams are on screen.
+
+**Search** finds a person or a crew by name on every screen. Typing widens the
+view to all teams, so a name is found wherever it is rather than only on the
+crew you happened to be looking at. The tiles keep counting the whole day while
+the list is filtered — a register reading *1 present* because you searched one
+name would be read as the day's answer — and the bulk buttons stand down rather
+than act on half a list.
 
 **Workers** — your sites and crews. Add a site first, then add workers to it.
 *Remove* takes a worker off the daily list but keeps their past records, and
@@ -40,7 +54,8 @@ email or Drive and open it on your PC. On a PC it downloads straight away.
 **Records** — a month at a time, on a wide screen only. Workers down the left,
 one column per day across the top, laid out like the exported spreadsheet.
 Click a day to change it — blank → **P** → **A** → blank — and use the small
-button along the bottom of a present day to set extra hours. Present, absent
+button along the bottom of a present day to set extra hours. A day carrying a
+note has a corner flag; hover it to read the note. Present, absent
 and extra-hours totals stay pinned to the right as the days scroll, with a
 subtotal per team.
 
@@ -191,7 +206,7 @@ Data is one object in `localStorage` under `tikita.v1`:
 {
   sites:   [{ id, name }],
   workers: [{ id, siteId, name, active }],
-  records: { '2026-09-15': { workerId: { s: 'P', x: 1.5 } } },  // s: 'P'|'A', x: extra hours
+  records: { '2026-09-15': { workerId: { s: 'P', x: 1.5, n: 'left early' } } },  // s: 'P'|'A', x: extra hours, n: note
   sync:    { code, name, lastNow, lastSyncedAt, lastError },
   pending: { sites: {}, workers: {}, marks: {} }                // owed to the other phones
 }
@@ -214,7 +229,13 @@ functions that check the company code first:
 | `tikita_push(code, payload)` | Upserts this phone's changes, server-stamped |
 
 Deletions travel as tombstones (`deleted: true`) so a removal on one phone
-reaches the others instead of reappearing on the next sync. The project URL and
+reaches the others instead of reappearing on the next sync.
+
+A mark's note is the one field that is not simply overwritten. A device too old
+to know about notes sends no `note` key at all, and `tikita_push` keeps the
+stored note in that case; only an explicit empty string clears one. That way a
+phone that has not opened since the change cannot wipe a note written on the
+PC. The project URL and
 publishable key in `sync.js` are public by design; the company code is the
 secret.
 

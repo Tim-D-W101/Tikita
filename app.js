@@ -55,7 +55,9 @@
     exportTo: null,
     exportSite: ALL_SITES,
     month: null,          // 'YYYY-MM' shown on the Records screen
-    recordSite: ALL_SITES
+    recordSite: ALL_SITES,
+    search: '',           // filters workers and teams on every list
+    noteFor: null         // worker whose note box is open but still empty
   };
 
   function load() {
@@ -212,11 +214,31 @@
         else absent++;
       });
       return {
-        site: site, workers: workers,
+        site: site,
+        workers: workers,                      // the whole crew — counts and
+                                               // 'All present' always mean this
+        shown: filterTeam(site, workers),      // and this is what is on screen
         present: present, absent: absent, extra: extra,
         allPresent: workers.length > 0 && present === workers.length
       };
     });
+  }
+
+  /*
+   * One search box serves every list. A team whose own name matches keeps all
+   * of its workers, so searching a crew name is a way to pull up that crew
+   * wherever you are.
+   */
+  function searchTerm() { return ui.search.trim().toLowerCase(); }
+
+  function matches(text) {
+    var term = searchTerm();
+    return !term || String(text).toLowerCase().indexOf(term) !== -1;
+  }
+
+  function filterTeam(site, workers) {
+    if (!searchTerm() || matches(site.name)) return workers;
+    return workers.filter(function (w) { return matches(w.name); });
   }
 
   function getMark(key, workerId) {
@@ -234,8 +256,24 @@
       delete day[workerId];
       if (!Object.keys(day).length) delete state.records[key];
     } else {
-      day[workerId] = { s: status, x: (status === 'P' && existing) ? (existing.x || 0) : 0 };
+      day[workerId] = {
+        s: status,
+        x: (status === 'P' && existing) ? (existing.x || 0) : 0,
+        // A note was typed about the person's day, not about the letter
+        // against it. Switching P to A keeps it; clearing the mark outright
+        // is a deliberate wipe and takes the note with it.
+        n: (existing && existing.n) || ''
+      };
     }
+    changed('marks', TikitaSync.markKey(key, workerId));
+  }
+
+  function setNote(key, workerId, text) {
+    var day = state.records[key];
+    if (!day || !day[workerId]) return;
+    var note = String(text == null ? '' : text).trim().slice(0, 200);
+    if ((day[workerId].n || '') === note) return;
+    day[workerId].n = note;
     changed('marks', TikitaSync.markKey(key, workerId));
   }
 
@@ -324,11 +362,13 @@
         '</button>' +
       '</div>';
 
-    var html = teams.map(function (team) {
-      present += team.present;
-      absent += team.absent;
-      extra += team.extra;
+    var filtering = !!searchTerm();
+    var shownCount = teams.reduce(function (n, t) { return n + t.shown.length; }, 0);
 
+    var html = teams.filter(function (team) {
+      // while filtering, a crew with nothing matching drops out entirely
+      return !filtering || team.shown.length;
+    }).map(function (team) {
       var count = team.workers.length;
       var head =
         '<div class="team" data-site="' + team.site.id + '">' +
@@ -338,7 +378,7 @@
               (count ? team.present + ' of ' + count + ' present' : 'No workers yet') +
             '</div>' +
           '</div>' +
-          (count
+          (count && !filtering
             ? '<button type="button" class="team-btn' + (team.allPresent ? ' on' : '') + '" ' +
                 'data-act="team-present" aria-pressed="' + team.allPresent + '">' +
                 '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>' +
@@ -347,7 +387,7 @@
             : '') +
         '</div>';
 
-      var cards = team.workers.map(function (w) {
+      var cards = team.shown.map(function (w) {
         var mark = getMark(ui.date, w.id);
         var status = mark ? mark.s : null;
 
@@ -375,21 +415,70 @@
           '</div>';
         }
 
+        if (status) card += noteRow(w, mark);
+
         return card + '</div>';
       }).join('');
 
       return '<section class="team-block">' + head + cards + '</section>';
     }).join('');
 
-    list.innerHTML = nudge + html;
+    var totalWorkers = 0;
+    teams.forEach(function (t) {
+      present += t.present; absent += t.absent; extra += t.extra;
+      totalWorkers += t.workers.length;
+    });
 
-    var totalWorkers = teams.reduce(function (n, t) { return n + t.workers.length; }, 0);
+    list.innerHTML = nudge + (html ||
+      '<div class="empty"><h3>Nothing matches</h3>' +
+      '<p>No worker or team is called \u201c' + escapeHtml(ui.search.trim()) + '\u201d.</p>' +
+      '<button type="button" class="primary-btn" data-act="clear-search">Clear the search</button></div>');
+
+    /*
+     * The tiles keep counting the whole day even while the list is filtered —
+     * a register showing '1 present' because you searched one name would be
+     * read as the day's answer. The line below says what is hidden instead,
+     * and the bulk buttons stand down rather than act on a partial list.
+     */
     $('sumPresent').textContent = present;
     $('sumAbsent').textContent = absent;
     $('sumTodo').textContent = totalWorkers - present - absent;
     $('sumExtra').textContent = round2(extra);
     $('summary').hidden = false;
-    $('bulkRow').hidden = false;
+    $('bulkRow').hidden = filtering;
+
+    var note = $('todayFilterNote');
+    note.hidden = !filtering;
+    if (filtering) {
+      note.textContent = 'Showing ' + shownCount + ' of ' + totalWorkers +
+        ' \u00b7 totals above are for the whole day';
+    }
+  }
+
+  /*
+   * A line for 'left early', 'sick', 'rain stopped work'. It hangs off the
+   * mark, so it only appears once someone is marked P or A, and it travels to
+   * the other devices with the mark.
+   */
+  function noteRow(worker, mark) {
+    var text = (mark && mark.n) || '';
+    var open = text || (ui.noteFor === worker.id);
+
+    if (!open) {
+      return '<div class="noterow">' +
+        '<button type="button" class="note-add" data-act="note-open">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
+          '<span>Add a note</span>' +
+        '</button>' +
+      '</div>';
+    }
+
+    return '<div class="noterow open">' +
+      '<label class="sr-only" for="n-' + worker.id + '">Note for ' + escapeHtml(worker.name) + '</label>' +
+      '<input id="n-' + worker.id + '" type="text" class="note-input" maxlength="200" ' +
+        'data-act="note" placeholder="Why? e.g. left early, sick" ' +
+        'value="' + escapeHtml(text) + '">' +
+    '</div>';
   }
 
   function emptyState(title, body, action) {
@@ -523,6 +612,8 @@
     var status = mark ? mark.s : null;
     var what = (status === 'P') ? 'Present' : (status === 'A') ? 'Absent' : 'Not marked';
     var label = what + ' — ' + worker.name + ', ' + shortDate(day);
+    var note = (mark && mark.n) || '';
+    if (note) label += '\n\u201c' + note + '\u201d';
     var dow = parseKey(day).getDay();
 
     var out = '<td class="c' + (isToday ? ' is-today' : (dow === 0 || dow === 6) ? ' weekend' : '') + '">' +
@@ -530,7 +621,8 @@
         (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : '') + '" ' +
         'data-act="cycle" data-w="' + worker.id + '" data-d="' + day + '" ' +
         'title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' +
-      (status || '') + '</button>';
+      (status || '') + (note ? '<span class="has-note" aria-hidden="true"></span>' : '') +
+      '</button>';
 
     if (status === 'P') {
       var hours = mark.x || 0;
@@ -557,7 +649,7 @@
         if (w.active !== false) return true;
         return days.some(function (d) { return !!getMark(d, w.id); });
       });
-      return { site: site, workers: workers };
+      return { site: site, workers: filterTeam(site, workers) };
     }).filter(function (g) { return g.workers.length > 0; });
   }
 
@@ -606,8 +698,9 @@
       return;
     }
 
-    host.innerHTML = state.sites.map(function (site) {
-      var workers = workersOfSite(site.id, true);
+    var blocks = state.sites.map(function (site) {
+      var workers = filterTeam(site, workersOfSite(site.id, true));
+      if (searchTerm() && !workers.length) return '';
       var lines = workers.length
         ? workers.map(function (w) {
             return '<div class="worker-line' + (w.active === false ? ' inactive' : '') + '" data-worker="' + w.id + '">' +
@@ -634,6 +727,10 @@
         '</div>' +
       '</div>';
     }).join('');
+
+    host.innerHTML = blocks || '<div class="empty"><h3>Nothing matches</h3>' +
+      '<p>No worker or team here is called \u201c' + escapeHtml(ui.search.trim()) + '\u201d.</p>' +
+      '<button type="button" class="primary-btn" data-act="clear-search">Clear the search</button></div>';
   }
 
   // ── view: export ───────────────────────────────────────
@@ -984,7 +1081,8 @@
 
   function renderFromRemote() {
     var active = document.activeElement;
-    if (active && active.tagName === 'INPUT' && active.dataset.act === 'extra') {
+    var act = (active && active.dataset) ? active.dataset.act : '';
+    if (active && active.tagName === 'INPUT' && (act === 'extra' || act === 'note')) {
       if (!heldRender) {
         heldRender = true;
         active.addEventListener('blur', function () {
@@ -996,8 +1094,63 @@
     render();
   }
 
+  function syncSearchBoxes() {
+    ['todaySearch', 'workerSearch', 'recordSearch'].forEach(function (id) {
+      var box = $(id);
+      if (box.value !== ui.search) box.value = ui.search;
+      box.parentNode.querySelector('.search-clear').hidden = !ui.search;
+    });
+  }
+
+  /*
+   * A row of chips scrolls by swipe on a phone, but a mouse has no way to push
+   * it sideways. Drag it like a map, and let the wheel do the same.
+   */
+  function dragScroll(el) {
+    var down = false, startX = 0, startLeft = 0, moved = 0;
+
+    el.addEventListener('pointerdown', function (e) {
+      moved = 0;
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      down = true;
+      startX = e.clientX;
+      startLeft = el.scrollLeft;
+    });
+
+    el.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - startX;
+      moved = Math.max(moved, Math.abs(dx));
+      el.scrollLeft = startLeft - dx;
+      if (moved > 3) {
+        // Only now is this a drag. The class takes the chips out of the
+        // pointer's way, so adding it any earlier — on the press — would
+        // make an ordinary click land on the row instead of the chip.
+        el.classList.add('dragging');
+        e.preventDefault();
+      }
+    });
+
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
+      el.addEventListener(evt, function () { down = false; el.classList.remove('dragging'); });
+    });
+
+    // A drag that ends over a chip must not also count as picking that chip.
+    // 'moved' survives until the next pointerdown, which is after this fires.
+    el.addEventListener('click', function (e) {
+      if (moved > 4) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
+
+    el.addEventListener('wheel', function (e) {
+      if (el.scrollWidth <= el.clientWidth || e.deltaX !== 0) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }, { passive: false });
+  }
+
   function render() {
     heldRender = false;
+    syncSearchBoxes();
     var validSelection = (ui.siteId === ALL_SITES && state.sites.length > 1) ||
                          (ui.siteId && siteById(ui.siteId));
     if (!validSelection) {
@@ -1080,11 +1233,13 @@
       if (tab) setView(tab.dataset.view);
     });
 
-    $('prevDay').addEventListener('click', function () { ui.date = shiftKey(ui.date, -1); renderToday(); });
-    $('nextDay').addEventListener('click', function () { ui.date = shiftKey(ui.date, 1); renderToday(); });
-    $('todayBtn').addEventListener('click', function () { ui.date = todayKey(); renderToday(); });
+    function goToDay(key) { ui.date = key; ui.noteFor = null; renderToday(); }
+
+    $('prevDay').addEventListener('click', function () { goToDay(shiftKey(ui.date, -1)); });
+    $('nextDay').addEventListener('click', function () { goToDay(shiftKey(ui.date, 1)); });
+    $('todayBtn').addEventListener('click', function () { goToDay(todayKey()); });
     $('datePicker').addEventListener('change', function (e) {
-      if (e.target.value) { ui.date = e.target.value; renderToday(); }
+      if (e.target.value) goToDay(e.target.value);
     });
 
     // records
@@ -1144,7 +1299,13 @@
       if (!card) return;
       var workerId = card.dataset.worker;
 
-      if (btn.dataset.act === 'mark') {
+      if (btn.dataset.act === 'note-open') {
+        ui.noteFor = workerId;
+        renderToday();
+        var box = $('n-' + workerId);
+        if (box) box.focus();
+      } else if (btn.dataset.act === 'mark') {
+        ui.noteFor = null;
         setMark(ui.date, workerId, btn.dataset.status);
         renderToday();
       } else if (btn.dataset.act === 'plus' || btn.dataset.act === 'minus') {
@@ -1157,11 +1318,53 @@
 
     $('rosterList').addEventListener('change', function (e) {
       var input = e.target.closest('input[data-act="extra"]');
-      if (!input) return;
-      var card = input.closest('[data-worker]');
-      setExtra(ui.date, card.dataset.worker, parseFloat(input.value) || 0);
-      renderToday();
+      if (input) {
+        setExtra(ui.date, input.closest('[data-worker]').dataset.worker, parseFloat(input.value) || 0);
+        renderToday();
+        return;
+      }
+
+      var note = e.target.closest('input[data-act="note"]');
+      if (!note) return;
+      setNote(ui.date, note.closest('[data-worker]').dataset.worker, note.value);
     });
+
+    /*
+     * An empty note box that is left alone folds back into the 'Add a note'
+     * button, so an abandoned one does not sit there looking like a field
+     * somebody still has to fill in.
+     */
+    $('rosterList').addEventListener('focusout', function (e) {
+      var note = e.target.closest('input[data-act="note"]');
+      if (!note) return;
+      var worker = note.closest('[data-worker]').dataset.worker;
+      setNote(ui.date, worker, note.value);
+      if (!note.value.trim() && ui.noteFor === worker) { ui.noteFor = null; renderToday(); }
+    });
+
+    ['todaySearch', 'workerSearch', 'recordSearch'].forEach(function (id) {
+      $(id).addEventListener('input', function (e) {
+        var starting = !ui.search && e.target.value;
+        ui.search = e.target.value;
+        // A search means "find this, wherever it is". Widen to every team as
+        // soon as one starts, so the chips and the tiles visibly say so
+        // rather than the search quietly missing people on other crews.
+        if (starting && state.sites.length > 1) {
+          ui.siteId = ALL_SITES;
+          ui.recordSite = ALL_SITES;
+        }
+        render();
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act="clear-search"]');
+      if (!btn) return;
+      ui.search = '';
+      render();
+    });
+
+    [$('siteChips'), $('recordChips')].forEach(dragScroll);
 
     $('allPresentBtn').addEventListener('click', function () {
       var marked = 0;
