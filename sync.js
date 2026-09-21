@@ -119,7 +119,11 @@
         var cut = key.indexOf('|');
         var day = key.slice(0, cut), workerId = key.slice(cut + 1);
         var mark = s.records[day] && s.records[day][workerId];
-        return mark ? { day: day, workerId: workerId, status: mark.s, extra: mark.x || 0, deleted: false }
+        // 'note' is always sent, even empty: the server tells a missing key
+        // (a client too old to know about notes) from a note cleared on
+        // purpose, and only the second one erases what is stored.
+        return mark ? { day: day, workerId: workerId, status: mark.s, extra: mark.x || 0,
+                        note: mark.n || '', deleted: false }
                     : { day: day, workerId: workerId, deleted: true };
       })
     };
@@ -179,9 +183,10 @@
       }
       if (!day) { day = s.records[row.day] = {}; }
       var extra = Number(row.extra) || 0;
+      var note = row.note || '';
       var cur = day[row.workerId];
-      if (!cur || cur.s !== row.status || (cur.x || 0) !== extra) {
-        day[row.workerId] = { s: row.status, x: extra };
+      if (!cur || cur.s !== row.status || (cur.x || 0) !== extra || (cur.n || '') !== note) {
+        day[row.workerId] = { s: row.status, x: extra, n: note };
         changed = true;
       }
     });
