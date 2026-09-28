@@ -13,6 +13,8 @@
   --present-bg: #dff4e6;
   --absent: #b3261e;
   --absent-bg: #fce4e2;
+  --holiday-bg: #fdecc0;
+  --holiday-line: #b7791f;
   --danger: #b3261e;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(16, 32, 38, .06), 0 4px 14px rgba(16, 32, 38, .05);
@@ -36,6 +38,8 @@
     --present-bg: #14301f;
     --absent: #ff9188;
     --absent-bg: #36191a;
+    --holiday-bg: #3a2f0f;
+    --holiday-line: #f2c94c;
     --danger: #ff9188;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4);
   }
@@ -184,7 +188,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 /* ── summary ────────────────────────────────────────────── */
 .summary {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  /* four tiles, or five on a day somebody worked only some hours */
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px;
   margin-bottom: 12px;
 }
 .summary-item {
@@ -234,7 +239,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .seg { display: flex; gap: 6px; flex: none; }
 .seg button {
-  min-width: 54px; height: 40px; padding: 0 12px;
+  min-width: 46px; height: 40px; padding: 0 10px;
   border-radius: 11px; border: 1.5px solid var(--line);
   background: var(--surface-2); color: var(--text-dim);
   font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer;
@@ -242,6 +247,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .seg button:active { transform: scale(.95); }
 .seg button.on-p { background: var(--present-bg); border-color: var(--present); color: var(--present); }
 .seg button.on-a { background: var(--absent-bg); border-color: var(--absent); color: var(--absent); }
+/* H — came in, but worked only some hours */
+.seg button.on-h { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.extra.short label { color: var(--accent); font-weight: 600; }
 
 .extra {
   display: flex; align-items: center; gap: 10px;
@@ -416,6 +424,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid thead .corner { z-index: 5; left: 0; text-align: left; padding-left: 10px; }
 .grid .day { width: 40px; min-width: 40px; }
 .grid .day.weekend { color: var(--text); background: var(--line); }
+/* Sunday, and any public holiday, get the same amber the marked cells use */
+.grid .day.holiday { color: var(--text); background: var(--holiday-bg); }
 .grid .day.is-today { background: var(--accent); color: #fff; }
 .grid .day.is-today .dwd { color: rgba(255, 255, 255, .8); }
 .grid .dnum { display: block; font-size: 12.5px; color: var(--text); }
@@ -441,6 +451,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /* one day for one worker */
 .grid td.c { position: relative; width: 42px; min-width: 42px; }
 .grid td.c.weekend { background: var(--surface-2); }
+/* Sunday or a public holiday, not yet marked — a lighter version of the
+   flag below, so an empty Sunday/holiday still stands out while planning. */
+.grid td.c.holiday { background: color-mix(in srgb, var(--holiday-bg) 55%, var(--surface)); }
 .grid td.c.is-today { background: var(--accent-soft); }
 /*
  * The bottom strip is always reserved for the hours badge, whether or not
@@ -455,6 +468,16 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .cell.on-p { background: var(--present-bg); color: var(--present); }
 .cell.on-a { background: var(--absent-bg); color: var(--absent); }
+.cell.on-h { background: var(--accent-soft); color: var(--accent); }
+/*
+ * A mark on a Sunday or public holiday: the amber background takes over so
+ * it reads at a glance, but the P/A letter keeps its own colour — a Sunday
+ * or holiday worked is still worth telling apart from one taken off.
+ */
+.cell.flag.on-p, .cell.flag.on-a, .cell.flag.on-h {
+  background: var(--holiday-bg);
+  box-shadow: inset 0 0 0 2px var(--holiday-line);
+}
 .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* the strip along the bottom of a present day, which sets extra hours */
@@ -466,6 +489,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   cursor: pointer; opacity: 0;
 }
 .xb.set { opacity: 1; background: var(--accent); color: var(--surface); }
+/* on an H the strip is the hours worked, not overtime — outlined, not filled */
+.xb.short { background: var(--surface); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .grid td.c:hover .xb, .xb:focus { opacity: 1; }
 .xb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -475,19 +500,25 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid tr.subtotal th, .grid tr.subtotal td { background: var(--surface-2); font-weight: 700; }
 
 /*
- * The three totals stay pinned to the right while the days scroll under
- * them — on a 31-day month they are the first thing you want to read.
+ * The six totals — Present, Absent, hours-only Hrs, Extra, Sundays,
+ * Holidays — stay pinned to the right while the days scroll under them. On a
+ * 31-day month they are the first thing you want to read.
  */
 .grid .tot {
   position: sticky; z-index: 2;
   width: 54px; min-width: 54px; text-align: center;
   background: var(--surface); font-weight: 600; padding: 4px 6px;
 }
-.grid .tot:nth-last-child(3) { right: 108px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(6) { right: 270px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(5) { right: 216px; }
+.grid .tot:nth-last-child(4) { right: 162px; }
+.grid .tot:nth-last-child(3) { right: 108px; }
 .grid .tot:nth-last-child(2) { right: 54px; }
 .grid .tot:last-child { right: 0; }
 .grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
 .grid tr.subtotal .tot { background: var(--surface-2); }
+.grid .tot.sun, .grid .tot.hol { font-size: 12px; }
+.grid thead .tot.sun, .grid thead .tot.hol { color: var(--holiday-line); }
 
 /* ── search ─────────────────────────────────────────────── */
 .searchbar {
@@ -622,6 +653,28 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /* ── inside the desktop shell ───────────────────────────── */
 /* There is nothing to install — this is the installed thing. */
 .is-desktop #installBtn { display: none !important; }
+
+/* ── the in-app question box (replaces prompt()) ─────────── */
+.ask {
+  width: min(400px, calc(100vw - 32px));
+  padding: 0; border: 0; border-radius: var(--radius);
+  background: var(--surface); color: var(--text);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+}
+.ask::backdrop { background: rgba(10, 20, 24, .45); }
+.ask form { padding: 20px 20px 16px; }
+.ask h3 { margin: 0 0 6px; font-size: 17px; font-weight: 650; }
+.ask p {
+  margin: 0 0 14px; font-size: 13.5px; line-height: 1.5;
+  color: var(--text-dim); white-space: pre-line;
+}
+.ask input {
+  width: 100%; height: 46px; padding: 0 12px; font: inherit; font-size: 17px;
+  border: 1px solid var(--line); border-radius: 11px;
+  background: var(--surface-2); color: var(--text);
+}
+.ask input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.ask-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }

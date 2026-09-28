@@ -66,6 +66,7 @@
       <div class="summary-item"><b id="sumAbsent">0</b><span>absent</span></div>
       <div class="summary-item"><b id="sumTodo">0</b><span>unmarked</span></div>
       <div class="summary-item"><b id="sumExtra">0</b><span>extra hrs</span></div>
+      <div class="summary-item" id="sumShortItem" hidden><b id="sumShort">0</b><span>hours only</span></div>
     </div>
 
     <p class="filter-note" id="todayFilterNote" hidden></p>
@@ -107,8 +108,9 @@
     <div id="recordsGrid"></div>
 
     <p class="hint" id="recordsHelp" hidden>
-      Click a day to change it: blank → <b>P</b> → <b>A</b> → blank.
-      On a day marked present, the small button beside it sets extra hours.
+      Click a day to change it: blank → <b>P</b> → <b>A</b> → <b>H</b> (worked only some hours) → blank.
+      The strip along the bottom of a <b>P</b> sets overtime; on an <b>H</b> it sets the hours worked.
+      Sundays and public holidays are shaded amber, and a mark on one is highlighted.
       Every correction syncs to the phones like any other change.
     </p>
   </section>
@@ -252,6 +254,19 @@
 </nav>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- In place of the browser's prompt(), which the desktop app does not have -->
+<dialog class="ask" id="askDialog" aria-labelledby="askTitle">
+  <form method="dialog" id="askForm">
+    <h3 id="askTitle"></h3>
+    <p id="askMessage"></p>
+    <input id="askInput" autocomplete="off" spellcheck="false">
+    <div class="ask-actions">
+      <button type="button" class="ghost-btn" id="askCancel">Cancel</button>
+      <button type="submit" class="primary-btn compact" value="ok">Save</button>
+    </div>
+  </form>
+</dialog>
 
 <script src="./xlsx.js"></script>
 <script src="./sync.js"></script>
