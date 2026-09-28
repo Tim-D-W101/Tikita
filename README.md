@@ -22,10 +22,16 @@ the few absentees to **A**. The header shows *"2 of 3 present"* so you can see
 at a glance which crews are done. When a whole team is already present the
 button turns green; tapping it then clears that team, after a confirm.
 
-Individual workers are **P** / **A**. Tapping the choice again clears it, so a
-mis-tap is easy to undo. When someone is marked present an **extra hours** field
-appears under their name; leave it at 0 for a normal day, or use −/+ (half-hour
-steps) or type a number for overtime.
+Individual workers are **P** / **A** / **H**. Tapping the choice again clears
+it, so a mis-tap is easy to undo. When someone is marked present an **extra
+hours** field appears under their name; leave it at 0 for a normal day, or use
+−/+ (half-hour steps) or type a number for overtime.
+
+**H** is for someone who came in but worked only part of the day — an hour, a
+morning. The field under their name then asks for **hours worked** instead, and
+starts at 1. An H is not a present day and not an absent one: it has its own
+tile on Today, its own *Hrs* total on Records, and exports as `H1.5` with its
+own column.
 
 Once someone is marked, **Add a note** appears under their name — *left early*,
 *off sick*, *rain stopped work*. It hangs off that day's mark, so it goes to
@@ -53,11 +59,26 @@ email or Drive and open it on your PC. On a PC it downloads straight away.
 
 **Records** — a month at a time, on a wide screen only. Workers down the left,
 one column per day across the top, laid out like the exported spreadsheet.
-Click a day to change it — blank → **P** → **A** → blank — and use the small
-button along the bottom of a present day to set extra hours. A day carrying a
-note has a corner flag; hover it to read the note. Present, absent
-and extra-hours totals stay pinned to the right as the days scroll, with a
-subtotal per team.
+Click a day to change it — blank → **P** → **A** → **H** → blank — and use the
+strip along the bottom of a day to set its hours: overtime on a P, hours worked
+on an H. A day carrying a note has a corner flag; hover it to read the note.
+
+**Sundays and South African public holidays** are shaded amber, and any mark on
+one is boxed in amber so it stands out. Hover a shaded day's header to see which
+holiday it is.
+
+Six totals stay pinned to the right as the days scroll, with a subtotal per
+team: **P**, **A**, **Hrs** (hours worked on H days), **Extra** (overtime),
+**Sun** and **Hol**. Sun and Hol count days *worked* — P or H — because they
+are there for Sunday and holiday pay; a Sunday marked absent is highlighted but
+not counted. A day that is both a Sunday and a holiday counts in both.
+
+The holiday calendar is worked out, not typed in, so it never needs updating:
+the ten fixed dates, Good Friday and Family Day from Easter, and the Public
+Holidays Act rule that a holiday falling on a Sunday makes the Monday a holiday
+too. When that Monday is already one — Christmas on a Sunday — the extra day
+moves to the Tuesday, as it was declared in 2016 and 2022. What it cannot know
+about is a one-off day the President declares, such as an election day.
 
 This is where a mistake gets fixed: a day marked on the wrong worker, a crew
 someone forgot to mark, an overtime figure that came in late. Corrections go
@@ -72,14 +93,18 @@ it is good at.
 One sheet, laid out like a payroll timesheet: workers down the left, one column
 per day across the top, grouped under a heading per site.
 
-| | 1 | 2 | 3 | … | Present | Absent | Extra hrs |
-|---|---|---|---|---|---|---|---|
-| Aisha Mensah | P | A | P+1.5 | | 18 | 3 | 6.5 |
+| | 1 | 2 | 3 | 4 | … | Present | Absent | Hours-only hrs | Extra hrs |
+|---|---|---|---|---|---|---|---|---|---|
+| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 2 | 6.5 |
 
 - **P** — present
 - **A** — absent
 - **P+1.5** — present, with 1.5 extra hours
+- **H2** — worked only 2 hours that day
 - blank — not marked that day
+
+The Sunday/holiday highlighting and the Sun/Hol counts are on the Records
+screen only; the spreadsheet does not carry them yet.
 
 Each site gets a subtotal row, and there is an all-sites total when you export
 more than one. The top row and the worker column stay frozen as you scroll, and

@@ -179,6 +179,89 @@
     return out;
   }
 
+  // ── South Africa public holidays ────────────────────────
+  /*
+   * Computed, not a list that needs updating each year: the ten fixed dates,
+   * the two that move with Easter, and the Public Holidays Act rule that a
+   * holiday landing on a Sunday puts the following Monday on the list too.
+   *
+   * When that Monday is already a holiday — Christmas Day on a Sunday, with
+   * Day of Goodwill on the Monday — the extra day moves on to the next free
+   * day, which is how it was declared in 2011, 2016 and 2022 (Tuesday
+   * 27 December each time).
+   *
+   * What this cannot know about is a one-off day the President declares for
+   * some other reason, such as an election day.
+   */
+  var SA_FIXED_HOLIDAYS = [
+    [1, 1, "New Year's Day"],
+    [3, 21, 'Human Rights Day'],
+    [4, 27, 'Freedom Day'],
+    [5, 1, "Workers' Day"],
+    [6, 16, 'Youth Day'],
+    [8, 9, "National Women's Day"],
+    [9, 24, 'Heritage Day'],
+    [12, 16, 'Day of Reconciliation'],
+    [12, 25, 'Christmas Day'],
+    [12, 26, 'Day of Goodwill']
+  ];
+
+  /* Meeus/Jones/Butcher algorithm — Easter Sunday, Gregorian calendar. */
+  function easterSunday(year) {
+    var a = year % 19;
+    var b = Math.floor(year / 100);
+    var c = year % 100;
+    var d = Math.floor(b / 4);
+    var e = b % 4;
+    var f = Math.floor((b + 8) / 25);
+    var g = Math.floor((b - f + 1) / 3);
+    var h = (19 * a + b - d - g + 15) % 30;
+    var i = Math.floor(c / 4);
+    var k = c % 4;
+    var l = (32 + 2 * e + 2 * i - h - k) % 7;
+    var m = Math.floor((a + 11 * h + 22 * l) / 451);
+    var month = Math.floor((h + l - 7 * m + 114) / 31);
+    var day = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(year, month - 1, day);
+  }
+
+  var holidayCache = {};
+
+  /* {dateKey: holiday name}, for one calendar year. */
+  function southAfricaHolidays(year) {
+    if (holidayCache[year]) return holidayCache[year];
+
+    var map = {};
+    SA_FIXED_HOLIDAYS.forEach(function (h) {
+      map[dateKey(new Date(year, h[0] - 1, h[1]))] = h[2];
+    });
+
+    var easter = easterSunday(year);
+    var goodFriday = new Date(easter); goodFriday.setDate(easter.getDate() - 2);
+    var familyDay = new Date(easter); familyDay.setDate(easter.getDate() + 1);
+    map[dateKey(goodFriday)] = 'Good Friday';
+    map[dateKey(familyDay)] = 'Family Day';
+
+    // Good Friday is always a Friday and Family Day always a Monday, so only
+    // the fixed dates can land on a Sunday and need the rollover.
+    SA_FIXED_HOLIDAYS.forEach(function (h) {
+      var d = new Date(year, h[0] - 1, h[1]);
+      if (d.getDay() !== 0) return;
+      var next = new Date(d);
+      next.setDate(d.getDate() + 1);
+      while (map[dateKey(next)]) next.setDate(next.getDate() + 1);
+      map[dateKey(next)] = h[2] + ' (observed)';
+    });
+
+    holidayCache[year] = map;
+    return map;
+  }
+
+  /* The holiday name for a 'YYYY-MM-DD' key, or null. */
+  function publicHolidayName(key) {
+    return southAfricaHolidays(Number(key.slice(0, 4)))[key] || null;
+  }
+
   // ── data helpers ───────────────────────────────────────
 
   function siteById(id) {
@@ -206,11 +289,12 @@
       : [siteById(ui.siteId)].filter(Boolean);
     return sites.map(function (site) {
       var workers = workersOfSite(site.id, false);
-      var present = 0, absent = 0, extra = 0;
+      var present = 0, absent = 0, extra = 0, hoursOnly = 0, hoursWorked = 0;
       workers.forEach(function (w) {
         var mark = getMark(ui.date, w.id);
         if (!mark) return;
         if (mark.s === 'P') { present++; extra += mark.x || 0; }
+        else if (mark.s === 'H') { hoursOnly++; hoursWorked += mark.x || 0; }
         else absent++;
       });
       return {
@@ -219,6 +303,7 @@
                                                // 'All present' always mean this
         shown: filterTeam(site, workers),      // and this is what is on screen
         present: present, absent: absent, extra: extra,
+        hoursOnly: hoursOnly, hoursWorked: hoursWorked,
         allPresent: workers.length > 0 && present === workers.length
       };
     });
@@ -256,9 +341,15 @@
       delete day[workerId];
       if (!Object.keys(day).length) delete state.records[key];
     } else {
+      /*
+       * 'x' means different things per status — overtime on top of a full
+       * day for P, the whole of what was worked for H — so it never carries
+       * across a change of letter. A fresh H starts at 1 hour, ready to be
+       * adjusted.
+       */
       day[workerId] = {
         s: status,
-        x: (status === 'P' && existing) ? (existing.x || 0) : 0,
+        x: status === 'H' ? 1 : 0,
         // A note was typed about the person's day, not about the letter
         // against it. Switching P to A keeps it; clearing the mark outright
         // is a deliberate wipe and takes the note with it.
@@ -277,9 +368,10 @@
     changed('marks', TikitaSync.markKey(key, workerId));
   }
 
+  /* Overtime for a P, or the hours actually worked for an H. */
   function setExtra(key, workerId, hours) {
     var day = state.records[key];
-    if (!day || !day[workerId] || day[workerId].s !== 'P') return;
+    if (!day || !day[workerId] || (day[workerId].s !== 'P' && day[workerId].s !== 'H')) return;
     day[workerId].x = Math.max(0, Math.min(24, Math.round(hours * 4) / 4)) || 0;
     changed('marks', TikitaSync.markKey(key, workerId));
   }
@@ -399,18 +491,24 @@
                 (status === 'P' ? ' class="on-p" aria-pressed="true"' : ' aria-pressed="false"') + '>P</button>' +
               '<button type="button" data-act="mark" data-status="A"' +
                 (status === 'A' ? ' class="on-a" aria-pressed="true"' : ' aria-pressed="false"') + '>A</button>' +
+              '<button type="button" data-act="mark" data-status="H" title="Worked only some hours"' +
+                (status === 'H' ? ' class="on-h" aria-pressed="true"' : ' aria-pressed="false"') +
+                ' aria-label="Hours only">H</button>' +
             '</div>' +
           '</div>';
 
-        if (status === 'P') {
+        // The same stepper serves both: overtime on a full day, or the whole
+        // of a short one. Only the label says which.
+        if (status === 'P' || status === 'H') {
           var hours = mark.x || 0;
-          card += '<div class="extra">' +
-            '<label for="x-' + w.id + '">Extra hours worked</label>' +
+          var what = status === 'P' ? 'Extra hours worked' : 'Hours worked (only)';
+          card += '<div class="extra' + (status === 'H' ? ' short' : '') + '">' +
+            '<label for="x-' + w.id + '">' + what + '</label>' +
             '<div class="stepper">' +
-              '<button type="button" data-act="minus" aria-label="Less extra time">\u2212</button>' +
+              '<button type="button" data-act="minus" aria-label="Fewer hours">\u2212</button>' +
               '<input id="x-' + w.id + '" type="number" inputmode="decimal" step="0.25" min="0" max="24" ' +
-                'value="' + hours + '" data-act="extra" aria-label="Extra hours for ' + escapeHtml(w.name) + '">' +
-              '<button type="button" data-act="plus" aria-label="More extra time">+</button>' +
+                'value="' + hours + '" data-act="extra" aria-label="' + what + ' for ' + escapeHtml(w.name) + '">' +
+              '<button type="button" data-act="plus" aria-label="More hours">+</button>' +
             '</div>' +
           '</div>';
         }
@@ -423,9 +521,10 @@
       return '<section class="team-block">' + head + cards + '</section>';
     }).join('');
 
-    var totalWorkers = 0;
+    var totalWorkers = 0, hoursOnly = 0, hoursWorked = 0;
     teams.forEach(function (t) {
       present += t.present; absent += t.absent; extra += t.extra;
+      hoursOnly += t.hoursOnly; hoursWorked += t.hoursWorked;
       totalWorkers += t.workers.length;
     });
 
@@ -442,8 +541,11 @@
      */
     $('sumPresent').textContent = present;
     $('sumAbsent').textContent = absent;
-    $('sumTodo').textContent = totalWorkers - present - absent;
+    $('sumTodo').textContent = totalWorkers - present - absent - hoursOnly;
     $('sumExtra').textContent = round2(extra);
+    // Only takes up room on a day when somebody actually worked short.
+    $('sumShortItem').hidden = !hoursOnly;
+    $('sumShort').textContent = hoursOnly + (hoursOnly ? ' · ' + round2(hoursWorked) + 'h' : '');
     $('summary').hidden = false;
     $('bulkRow').hidden = filtering;
 
@@ -549,32 +651,52 @@
 
     var today = todayKey();
 
+    var TOT_COLS = 6; // Present, Absent, Hours-only, Extra, Sundays, Holidays
+
     var head = '<tr><th class="corner" scope="col">Worker</th>' +
       days.map(function (d) {
         var dt = parseKey(d);
+        var dow = dt.getDay();
+        var holidayName = publicHolidayName(d);
         var cls = 'day';
-        if (dt.getDay() === 0 || dt.getDay() === 6) cls += ' weekend';
+        var title = '';
+        if (holidayName) { cls += ' holiday'; title = holidayName; }
+        else if (dow === 0) { cls += ' holiday'; title = 'Sunday'; }
+        else if (dow === 6) { cls += ' weekend'; }
         if (d === today) cls += ' is-today';
-        return '<th class="' + cls + '" scope="col">' +
+        return '<th class="' + cls + '" scope="col"' +
+            (title ? ' title="' + escapeHtml(title) + '"' : '') + '>' +
           '<span class="dnum">' + dt.getDate() + '</span>' +
-          '<span class="dwd">' + WEEKDAYS[dt.getDay()] + '</span></th>';
+          '<span class="dwd">' + WEEKDAYS[dow] + '</span></th>';
       }).join('') +
       '<th class="tot" scope="col">P</th>' +
       '<th class="tot" scope="col">A</th>' +
-      '<th class="tot" scope="col">Extra</th></tr>';
+      '<th class="tot" scope="col" title="Hours worked on hours-only (H) days">Hrs</th>' +
+      '<th class="tot" scope="col" title="Overtime on full days">Extra</th>' +
+      '<th class="tot sun" scope="col" title="Sundays worked (P or H)">Sun</th>' +
+      '<th class="tot hol" scope="col" title="Public holidays worked (P or H)">Hol</th></tr>';
 
     var body = groups.map(function (group) {
-      var gp = 0, ga = 0, gx = 0;
+      var gp = 0, ga = 0, gh = 0, gx = 0, gsun = 0, ghol = 0;
 
       var rows = group.workers.map(function (w) {
-        var p = 0, a = 0, x = 0;
+        var p = 0, a = 0, h = 0, x = 0, sun = 0, hol = 0;
         var cells = days.map(function (d) {
           var mark = getMark(d, w.id);
           if (mark && mark.s === 'P') { p++; x += mark.x || 0; }
           else if (mark && mark.s === 'A') { a++; }
+          else if (mark && mark.s === 'H') { h += mark.x || 0; }
+          // Days worked (P or H) only: these tallies are for Sunday and
+          // holiday pay, and a Sunday marked absent is not one worked. The
+          // cell itself is still highlighted, whatever the mark. A day that
+          // is both a Sunday and a holiday counts in both.
+          if (mark && mark.s !== 'A') {
+            if (parseKey(d).getDay() === 0) sun++;
+            if (publicHolidayName(d)) hol++;
+          }
           return recordCell(w, d, mark, d === today);
         }).join('');
-        gp += p; ga += a; gx += x;
+        gp += p; ga += a; gh += h; gx += x; gsun += sun; ghol += hol;
 
         return '<tr' + (w.active === false ? ' class="gone"' : '') + '>' +
           '<th class="name" scope="row">' + escapeHtml(w.name) +
@@ -582,17 +704,23 @@
           cells +
           '<td class="tot">' + p + '</td>' +
           '<td class="tot">' + a + '</td>' +
-          '<td class="tot">' + (x ? round2(x) : '') + '</td></tr>';
+          '<td class="tot">' + (h ? round2(h) : '') + '</td>' +
+          '<td class="tot">' + (x ? round2(x) : '') + '</td>' +
+          '<td class="tot sun">' + (sun || '') + '</td>' +
+          '<td class="tot hol">' + (hol || '') + '</td></tr>';
       }).join('');
 
       return '<tr class="group"><th class="name" scope="row">' + escapeHtml(group.site.name) + '</th>' +
-          '<td colspan="' + (days.length + 3) + '"></td></tr>' +
+          '<td colspan="' + (days.length + TOT_COLS) + '"></td></tr>' +
         rows +
         '<tr class="subtotal"><th class="name" scope="row">Total</th>' +
           '<td colspan="' + days.length + '"></td>' +
           '<td class="tot">' + gp + '</td>' +
           '<td class="tot">' + ga + '</td>' +
-          '<td class="tot">' + (gx ? round2(gx) : '') + '</td></tr>';
+          '<td class="tot">' + (gh ? round2(gh) : '') + '</td>' +
+          '<td class="tot">' + (gx ? round2(gx) : '') + '</td>' +
+          '<td class="tot sun">' + (gsun || '') + '</td>' +
+          '<td class="tot hol">' + (ghol || '') + '</td></tr>';
     }).join('');
 
     wrap.innerHTML = '<div class="grid-wrap"><table class="grid">' +
@@ -610,26 +738,41 @@
 
   function recordCell(worker, day, mark, isToday) {
     var status = mark ? mark.s : null;
-    var what = (status === 'P') ? 'Present' : (status === 'A') ? 'Absent' : 'Not marked';
+    var what = (status === 'P') ? 'Present'
+      : (status === 'A') ? 'Absent'
+      : (status === 'H') ? 'Worked ' + round2(mark.x || 0) + 'h only'
+      : 'Not marked';
     var label = what + ' — ' + worker.name + ', ' + shortDate(day);
     var note = (mark && mark.n) || '';
     if (note) label += '\n\u201c' + note + '\u201d';
     var dow = parseKey(day).getDay();
+    var special = publicHolidayName(day) || (dow === 0 ? 'Sunday' : '');
+    if (special) label = label.replace(shortDate(day), shortDate(day) + ' (' + special + ')');
 
-    var out = '<td class="c' + (isToday ? ' is-today' : (dow === 0 || dow === 6) ? ' weekend' : '') + '">' +
+    var tdCls = 'c';
+    if (isToday) tdCls += ' is-today';
+    else if (special) tdCls += ' holiday';
+    else if (dow === 6) tdCls += ' weekend';
+
+    var out = '<td class="' + tdCls + '">' +
       '<button type="button" class="cell' +
-        (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : '') + '" ' +
+        (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : status === 'H' ? ' on-h' : '') +
+        (status && special ? ' flag' : '') + '" ' +
         'data-act="cycle" data-w="' + worker.id + '" data-d="' + day + '" ' +
         'title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' +
       (status || '') + (note ? '<span class="has-note" aria-hidden="true"></span>' : '') +
       '</button>';
 
-    if (status === 'P') {
+    // The strip under the letter: overtime for a P, hours worked for an H.
+    // An H always shows its number — the hours are the whole point of it.
+    if (status === 'P' || status === 'H') {
       var hours = mark.x || 0;
-      out += '<button type="button" class="xb' + (hours ? ' set' : '') + '" ' +
+      var tip = status === 'P' ? 'Extra hours' : 'Hours worked';
+      out += '<button type="button" class="xb' + (hours || status === 'H' ? ' set' : '') +
+          (status === 'H' ? ' short' : '') + '" ' +
         'data-act="hours" data-w="' + worker.id + '" data-d="' + day + '" ' +
-        'title="Extra hours" aria-label="Extra hours for ' + escapeHtml(worker.name) +
-        ' on ' + shortDate(day) + '">' + (hours ? round2(hours) : '+') + '</button>';
+        'title="' + tip + '" aria-label="' + tip + ' for ' + escapeHtml(worker.name) +
+        ' on ' + shortDate(day) + '">' + (hours || status === 'H' ? round2(hours) : '+') + '</button>';
     }
     return out + '</td>';
   }
@@ -667,24 +810,75 @@
   }
 
   /*
-   * blank → P → A → blank, the same three states the register has. From 'A',
-   * setMark is handed the mark already there, which is how it clears.
+   * blank → P → A → H → blank, the same four states the register has. From
+   * 'H', setMark is handed the mark already there, which is how it clears.
    */
   function cycleMark(day, workerId) {
-    setMark(day, workerId, getMark(day, workerId) ? 'A' : 'P');
+    var mark = getMark(day, workerId);
+    var next = !mark ? 'P' : mark.s === 'P' ? 'A' : 'H';
+    setMark(day, workerId, next);
   }
 
+  /* The strip under a P (overtime) or an H (hours worked) opens this. */
   function editHours(day, workerId) {
     var mark = getMark(day, workerId);
-    if (!mark || mark.s !== 'P') return;
+    if (!mark || (mark.s !== 'P' && mark.s !== 'H')) return;
     var worker = workerById(workerId);
-    var typed = prompt('Extra hours for ' + (worker ? worker.name : 'this worker') +
-      ' on ' + shortDate(day) + '\n\nLeave 0 for a normal day.', String(mark.x || 0));
-    if (typed === null) return;
-    var hours = parseFloat(typed);
-    if (isNaN(hours)) { toast('That is not a number of hours.'); return; }
-    setExtra(day, workerId, hours);
-    renderRecords();
+    var who = (worker ? worker.name : 'this worker') + ' · ' + shortDate(day);
+    var short = mark.s === 'H';
+
+    ask({
+      title: short ? 'Hours worked' : 'Extra hours',
+      message: who + (short
+        ? '\nWorked only part of the day — how many hours in total?'
+        : '\nOvertime on top of a full day. Leave 0 for a normal day.'),
+      value: mark.x || 0,
+      number: true
+    }).then(function (typed) {
+      if (typed === null) return;
+      var hours = parseFloat(typed);
+      if (isNaN(hours) || hours < 0 || hours > 24) { toast('Enter a number of hours from 0 to 24.'); return; }
+      setExtra(day, workerId, hours);
+      renderRecords();
+    });
+  }
+
+  /*
+   * An in-app box for typing a value. The browser's own prompt() is not
+   * available in the desktop app — Electron never implemented it, so it
+   * silently returns nothing — which is why the hours button and the
+   * rename buttons did nothing on the PC. Resolves with the text typed, or
+   * null if cancelled.
+   */
+  function ask(opts) {
+    return new Promise(function (resolve) {
+      var dlg = $('askDialog');
+      var input = $('askInput');
+      $('askTitle').textContent = opts.title;
+      $('askMessage').textContent = opts.message || '';
+      $('askMessage').hidden = !opts.message;
+
+      if (opts.number) {
+        input.type = 'number';
+        input.inputMode = 'decimal';
+        input.step = '0.25'; input.min = '0'; input.max = '24';
+      } else {
+        input.type = 'text';
+        input.inputMode = 'text';
+        input.removeAttribute('step'); input.removeAttribute('min'); input.removeAttribute('max');
+      }
+      input.value = opts.value == null ? '' : String(opts.value);
+
+      function closed() {
+        dlg.removeEventListener('close', closed);
+        resolve(dlg.returnValue === 'ok' ? input.value : null);
+      }
+      dlg.returnValue = '';
+      dlg.addEventListener('close', closed);
+      dlg.showModal();
+      input.focus();
+      input.select();
+    });
   }
 
   // ── view: workers ──────────────────────────────────────
@@ -824,7 +1018,7 @@
                       parseKey(sel.from).getFullYear() !== parseKey(sel.to).getFullYear();
 
     var siteLabel = (ui.exportSite === ALL_SITES) ? 'All sites' : siteName(ui.exportSite);
-    var lastCol = days.length + 3; // worker col + days + present + absent + extra
+    var lastCol = days.length + 4; // worker col + days + present + absent + hours-only + extra
 
     var rows = [];
     var merges = [];
@@ -848,19 +1042,21 @@
       headA.push({ v: spansMonths ? (d.getDate() + '/' + (d.getMonth() + 1)) : String(d.getDate()), s: S.HEAD });
       headB.push({ v: WEEKDAYS[d.getDay()], s: S.HEAD_SMALL });
     });
-    headA.push({ v: 'Present', s: S.HEAD }, { v: 'Absent', s: S.HEAD }, { v: 'Extra hrs', s: S.HEAD });
-    headB.push({ v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL });
+    headA.push({ v: 'Present', s: S.HEAD }, { v: 'Absent', s: S.HEAD },
+               { v: 'Hours-only hrs', s: S.HEAD }, { v: 'Extra hrs', s: S.HEAD });
+    headB.push({ v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL },
+               { v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL });
     rows.push(headA);
     rows.push(headB);
 
     var headerRowIndex = rows.length; // 1-based row number of headB
     merges.push('A4:A5');
-    [days.length + 1, days.length + 2, days.length + 3].forEach(function (c) {
+    [days.length + 1, days.length + 2, days.length + 3, days.length + 4].forEach(function (c) {
       var name = XlsxWriter.colName(c);
       merges.push(name + '4:' + name + '5');
     });
 
-    var grand = { present: 0, absent: 0, extra: 0 };
+    var grand = { present: 0, absent: 0, short: 0, extra: 0 };
 
     sel.groups.forEach(function (group) {
       // site banner spanning the full table width
@@ -869,20 +1065,24 @@
       rows.push(banner);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(lastCol) + rows.length);
 
-      var subtotal = { present: 0, absent: 0, extra: 0 };
+      var subtotal = { present: 0, absent: 0, short: 0, extra: 0 };
 
       group.workers.forEach(function (worker) {
         var line = [{ v: worker.name + (worker.active === false ? ' (removed)' : ''), s: S.TEXT }];
-        var present = 0, absent = 0, extra = 0;
+        var present = 0, absent = 0, short = 0, extra = 0;
 
         days.forEach(function (key) {
           var mark = getMark(key, worker.id);
           if (!mark) { line.push({ v: '', s: S.BLANK_CELL }); return; }
+          var hrs = mark.x || 0;
           if (mark.s === 'P') {
             present++;
-            var hrs = mark.x || 0;
             extra += hrs;
             line.push({ v: hrs > 0 ? ('P+' + round2(hrs)) : 'P', s: S.PRESENT });
+          } else if (mark.s === 'H') {
+            // worked only part of the day: the letter plus the hours, e.g. H1.5
+            short += hrs;
+            line.push({ v: 'H' + round2(hrs), s: S.CENTER });
           } else {
             absent++;
             line.push({ v: 'A', s: S.ABSENT });
@@ -891,11 +1091,13 @@
 
         line.push({ v: present, t: 'n', s: S.TOTAL });
         line.push({ v: absent, t: 'n', s: S.TOTAL });
+        line.push({ v: round2(short), t: 'n', s: S.HOURS });
         line.push({ v: round2(extra), t: 'n', s: S.HOURS });
         rows.push(line);
 
         subtotal.present += present;
         subtotal.absent += absent;
+        subtotal.short += short;
         subtotal.extra += extra;
       });
 
@@ -903,6 +1105,7 @@
       for (var j = 0; j < days.length; j++) totalRow.push({ v: '', s: S.GROUP_SPAN });
       totalRow.push({ v: subtotal.present, t: 'n', s: S.GROUP });
       totalRow.push({ v: subtotal.absent, t: 'n', s: S.GROUP });
+      totalRow.push({ v: round2(subtotal.short), t: 'n', s: S.GROUP });
       totalRow.push({ v: round2(subtotal.extra), t: 'n', s: S.GROUP });
       rows.push(totalRow);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(days.length) + rows.length);
@@ -910,6 +1113,7 @@
 
       grand.present += subtotal.present;
       grand.absent += subtotal.absent;
+      grand.short += subtotal.short;
       grand.extra += subtotal.extra;
     });
 
@@ -918,17 +1122,18 @@
       for (var k = 0; k < days.length; k++) g.push({ v: '', s: S.GROUP_SPAN });
       g.push({ v: grand.present, t: 'n', s: S.GROUP });
       g.push({ v: grand.absent, t: 'n', s: S.GROUP });
+      g.push({ v: round2(grand.short), t: 'n', s: S.GROUP });
       g.push({ v: round2(grand.extra), t: 'n', s: S.GROUP });
       rows.push(g);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(days.length) + rows.length);
     }
 
     rows.push([]);
-    rows.push([{ v: 'P = present · A = absent · P+n = present with n extra hours · blank = not marked', s: S.SUBTITLE }]);
+    rows.push([{ v: 'P = present · A = absent · P+n = present with n extra hours · Hn = worked only n hours · blank = not marked', s: S.SUBTITLE }]);
 
     var cols = [{ width: 26 }];
     days.forEach(function () { cols.push({ width: spansMonths ? 6.5 : 5.6 }); });
-    cols.push({ width: 9 }, { width: 8 }, { width: 10 });
+    cols.push({ width: 9 }, { width: 8 }, { width: 11 }, { width: 10 });
 
     return XlsxWriter.build({
       sheetName: 'Attendance',
@@ -1423,8 +1628,9 @@
 
       if (act === 'rename-site') {
         var site = siteById(block.dataset.site);
-        var name = prompt('Team name', site.name);
-        if (name && name.trim()) { site.name = name.trim(); changed('sites', site.id); render(); }
+        ask({ title: 'Rename team', value: site.name }).then(function (name) {
+          if (name && name.trim()) { site.name = name.trim(); changed('sites', site.id); render(); }
+        });
 
       } else if (act === 'delete-site') {
         var target = siteById(block.dataset.site);
@@ -1449,12 +1655,13 @@
 
       } else if (act === 'rename-worker') {
         var worker = workerById(line.dataset.worker);
-        var newName = prompt('Worker name', worker.name);
-        if (newName && newName.trim()) {
-          worker.name = newName.trim();
-          changed('workers', worker.id);
-          renderWorkers();
-        }
+        ask({ title: 'Rename worker', value: worker.name }).then(function (newName) {
+          if (newName && newName.trim()) {
+            worker.name = newName.trim();
+            changed('workers', worker.id);
+            renderWorkers();
+          }
+        });
 
       } else if (act === 'toggle-worker') {
         var w2 = workerById(line.dataset.worker);
@@ -1545,6 +1752,8 @@
 
     $('backupBtn').addEventListener('click', doBackup);
     $('restoreBtn').addEventListener('click', function () { $('restoreInput').click(); });
+
+    $('askCancel').addEventListener('click', function () { $('askDialog').close('cancel'); });
     $('restoreInput').addEventListener('change', function (e) {
       if (e.target.files && e.target.files[0]) doRestore(e.target.files[0]);
       e.target.value = '';
