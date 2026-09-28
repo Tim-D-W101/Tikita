@@ -262,6 +262,18 @@
     return southAfricaHolidays(Number(key.slice(0, 4)))[key] || null;
   }
 
+  /*
+   * 'Sunday', a holiday's name, or '' for an ordinary day — including
+   * Saturday, which is an ordinary working day here. One answer shared by
+   * the Records grid and the export, so the two never disagree.
+   */
+  function dayOffName(key) {
+    return publicHolidayName(key) || (parseKey(key).getDay() === 0 ? 'Sunday' : '');
+  }
+
+  /* A mark that means work was done that day — what Sun/Hol pay counts. */
+  function worked(mark) { return !!mark && (mark.s === 'P' || mark.s === 'H'); }
+
   // ── data helpers ───────────────────────────────────────
 
   function siteById(id) {
@@ -657,12 +669,9 @@
       days.map(function (d) {
         var dt = parseKey(d);
         var dow = dt.getDay();
-        var holidayName = publicHolidayName(d);
-        var cls = 'day';
-        var title = '';
-        if (holidayName) { cls += ' holiday'; title = holidayName; }
-        else if (dow === 0) { cls += ' holiday'; title = 'Sunday'; }
-        else if (dow === 6) { cls += ' weekend'; }
+        // Sundays and public holidays are darker; Saturday is an ordinary day.
+        var title = dayOffName(d);
+        var cls = 'day' + (title ? ' off' : '');
         if (d === today) cls += ' is-today';
         return '<th class="' + cls + '" scope="col"' +
             (title ? ' title="' + escapeHtml(title) + '"' : '') + '>' +
@@ -687,10 +696,9 @@
           else if (mark && mark.s === 'A') { a++; }
           else if (mark && mark.s === 'H') { h += mark.x || 0; }
           // Days worked (P or H) only: these tallies are for Sunday and
-          // holiday pay, and a Sunday marked absent is not one worked. The
-          // cell itself is still highlighted, whatever the mark. A day that
-          // is both a Sunday and a holiday counts in both.
-          if (mark && mark.s !== 'A') {
+          // holiday pay, and a Sunday marked absent is not one worked. A day
+          // that is both a Sunday and a holiday counts in both.
+          if (worked(mark)) {
             if (parseKey(d).getDay() === 0) sun++;
             if (publicHolidayName(d)) hol++;
           }
@@ -745,19 +753,19 @@
     var label = what + ' — ' + worker.name + ', ' + shortDate(day);
     var note = (mark && mark.n) || '';
     if (note) label += '\n\u201c' + note + '\u201d';
-    var dow = parseKey(day).getDay();
-    var special = publicHolidayName(day) || (dow === 0 ? 'Sunday' : '');
+    var special = dayOffName(day);
     if (special) label = label.replace(shortDate(day), shortDate(day) + ' (' + special + ')');
 
     var tdCls = 'c';
     if (isToday) tdCls += ' is-today';
-    else if (special) tdCls += ' holiday';
-    else if (dow === 6) tdCls += ' weekend';
+    else if (special) tdCls += ' off';
 
+    // Worked on a Sunday or holiday: darker green. An A stays plain red —
+    // it is not a day worked.
     var out = '<td class="' + tdCls + '">' +
       '<button type="button" class="cell' +
         (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : status === 'H' ? ' on-h' : '') +
-        (status && special ? ' flag' : '') + '" ' +
+        (special && worked(mark) ? ' worked-off' : '') + '" ' +
         'data-act="cycle" data-w="' + worker.id + '" data-d="' + day + '" ' +
         'title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' +
       (status || '') + (note ? '<span class="has-note" aria-hidden="true"></span>' : '') +
@@ -1018,7 +1026,10 @@
                       parseKey(sel.from).getFullYear() !== parseKey(sel.to).getFullYear();
 
     var siteLabel = (ui.exportSite === ALL_SITES) ? 'All sites' : siteName(ui.exportSite);
-    var lastCol = days.length + 4; // worker col + days + present + absent + hours-only + extra
+    // worker col + days + present + absent + hours-only + extra + Sundays + holidays
+    var TOTALS = 6;
+    var lastCol = days.length + TOTALS;
+    var dayOff = days.map(dayOffName);
 
     var rows = [];
     var merges = [];
@@ -1037,26 +1048,30 @@
     // two header rows: day number, then weekday
     var headA = [{ v: 'Worker', s: S.HEAD }];
     var headB = [{ v: '', s: S.HEAD }];
-    days.forEach(function (key) {
+    days.forEach(function (key, i) {
       var d = parseKey(key);
-      headA.push({ v: spansMonths ? (d.getDate() + '/' + (d.getMonth() + 1)) : String(d.getDate()), s: S.HEAD });
-      headB.push({ v: WEEKDAYS[d.getDay()], s: S.HEAD_SMALL });
+      var off = !!dayOff[i];
+      headA.push({ v: spansMonths ? (d.getDate() + '/' + (d.getMonth() + 1)) : String(d.getDate()),
+                   s: off ? S.HEAD_OFF : S.HEAD });
+      // a holiday that is not a Sunday says so under its date
+      headB.push({ v: (off && dayOff[i] !== 'Sunday') ? 'Hol' : WEEKDAYS[d.getDay()],
+                   s: off ? S.HEAD_SMALL_OFF : S.HEAD_SMALL });
     });
     headA.push({ v: 'Present', s: S.HEAD }, { v: 'Absent', s: S.HEAD },
-               { v: 'Hours-only hrs', s: S.HEAD }, { v: 'Extra hrs', s: S.HEAD });
-    headB.push({ v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL },
-               { v: '', s: S.HEAD_SMALL }, { v: '', s: S.HEAD_SMALL });
+               { v: 'Hours-only hrs', s: S.HEAD }, { v: 'Extra hrs', s: S.HEAD },
+               { v: 'Sundays worked', s: S.HEAD }, { v: 'Holidays worked', s: S.HEAD });
+    for (var h = 0; h < TOTALS; h++) headB.push({ v: '', s: S.HEAD_SMALL });
     rows.push(headA);
     rows.push(headB);
 
     var headerRowIndex = rows.length; // 1-based row number of headB
     merges.push('A4:A5');
-    [days.length + 1, days.length + 2, days.length + 3, days.length + 4].forEach(function (c) {
-      var name = XlsxWriter.colName(c);
+    for (var c = 1; c <= TOTALS; c++) {
+      var name = XlsxWriter.colName(days.length + c);
       merges.push(name + '4:' + name + '5');
-    });
+    }
 
-    var grand = { present: 0, absent: 0, short: 0, extra: 0 };
+    var grand = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
 
     sel.groups.forEach(function (group) {
       // site banner spanning the full table width
@@ -1065,40 +1080,48 @@
       rows.push(banner);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(lastCol) + rows.length);
 
-      var subtotal = { present: 0, absent: 0, short: 0, extra: 0 };
+      var subtotal = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
 
       group.workers.forEach(function (worker) {
         var line = [{ v: worker.name + (worker.active === false ? ' (removed)' : ''), s: S.TEXT }];
-        var present = 0, absent = 0, short = 0, extra = 0;
+        var t = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
 
-        days.forEach(function (key) {
+        days.forEach(function (key, i) {
           var mark = getMark(key, worker.id);
-          if (!mark) { line.push({ v: '', s: S.BLANK_CELL }); return; }
+          var off = dayOff[i];
+          if (!mark) { line.push({ v: '', s: off ? S.BLANK_OFF : S.BLANK_CELL }); return; }
+
+          // Sundays and holidays worked, for Sunday and holiday pay. A day
+          // that is both counts in both.
+          if (worked(mark)) {
+            if (parseKey(key).getDay() === 0) t.sun++;
+            if (publicHolidayName(key)) t.hol++;
+          }
+
           var hrs = mark.x || 0;
           if (mark.s === 'P') {
-            present++;
-            extra += hrs;
-            line.push({ v: hrs > 0 ? ('P+' + round2(hrs)) : 'P', s: S.PRESENT });
+            t.present++;
+            t.extra += hrs;
+            line.push({ v: hrs > 0 ? ('P+' + round2(hrs)) : 'P', s: off ? S.WORKED_OFF : S.PRESENT });
           } else if (mark.s === 'H') {
             // worked only part of the day: the letter plus the hours, e.g. H1.5
-            short += hrs;
-            line.push({ v: 'H' + round2(hrs), s: S.CENTER });
+            t.short += hrs;
+            line.push({ v: 'H' + round2(hrs), s: off ? S.WORKED_OFF : S.CENTER });
           } else {
-            absent++;
+            t.absent++;
             line.push({ v: 'A', s: S.ABSENT });
           }
         });
 
-        line.push({ v: present, t: 'n', s: S.TOTAL });
-        line.push({ v: absent, t: 'n', s: S.TOTAL });
-        line.push({ v: round2(short), t: 'n', s: S.HOURS });
-        line.push({ v: round2(extra), t: 'n', s: S.HOURS });
+        line.push({ v: t.present, t: 'n', s: S.TOTAL });
+        line.push({ v: t.absent, t: 'n', s: S.TOTAL });
+        line.push({ v: round2(t.short), t: 'n', s: S.HOURS });
+        line.push({ v: round2(t.extra), t: 'n', s: S.HOURS });
+        line.push({ v: t.sun, t: 'n', s: S.TOTAL });
+        line.push({ v: t.hol, t: 'n', s: S.TOTAL });
         rows.push(line);
 
-        subtotal.present += present;
-        subtotal.absent += absent;
-        subtotal.short += short;
-        subtotal.extra += extra;
+        Object.keys(subtotal).forEach(function (k) { subtotal[k] += t[k]; });
       });
 
       var totalRow = [{ v: group.site.name + ' total', s: S.GROUP }];
@@ -1107,14 +1130,13 @@
       totalRow.push({ v: subtotal.absent, t: 'n', s: S.GROUP });
       totalRow.push({ v: round2(subtotal.short), t: 'n', s: S.GROUP });
       totalRow.push({ v: round2(subtotal.extra), t: 'n', s: S.GROUP });
+      totalRow.push({ v: subtotal.sun, t: 'n', s: S.GROUP });
+      totalRow.push({ v: subtotal.hol, t: 'n', s: S.GROUP });
       rows.push(totalRow);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(days.length) + rows.length);
       rows.push([]);
 
-      grand.present += subtotal.present;
-      grand.absent += subtotal.absent;
-      grand.short += subtotal.short;
-      grand.extra += subtotal.extra;
+      Object.keys(grand).forEach(function (k) { grand[k] += subtotal[k]; });
     });
 
     if (sel.groups.length > 1) {
@@ -1124,16 +1146,28 @@
       g.push({ v: grand.absent, t: 'n', s: S.GROUP });
       g.push({ v: round2(grand.short), t: 'n', s: S.GROUP });
       g.push({ v: round2(grand.extra), t: 'n', s: S.GROUP });
+      g.push({ v: grand.sun, t: 'n', s: S.GROUP });
+      g.push({ v: grand.hol, t: 'n', s: S.GROUP });
       rows.push(g);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(days.length) + rows.length);
     }
 
     rows.push([]);
     rows.push([{ v: 'P = present · A = absent · P+n = present with n extra hours · Hn = worked only n hours · blank = not marked', s: S.SUBTITLE }]);
+    rows.push([{ v: 'Darker columns are Sundays and South African public holidays ("Hol" under the date); a day worked on one is darker green. ' +
+                    'Sundays and holidays worked count P and H days only.', s: S.SUBTITLE }]);
+
+    // Which holidays fall in this period, by name, so a darker column can be
+    // traced back to a reason.
+    var named = [];
+    days.forEach(function (key, i) {
+      if (dayOff[i] && dayOff[i] !== 'Sunday') named.push(shortDate(key) + ' ' + dayOff[i]);
+    });
+    if (named.length) rows.push([{ v: 'Public holidays in this period: ' + named.join(' · '), s: S.SUBTITLE }]);
 
     var cols = [{ width: 26 }];
     days.forEach(function () { cols.push({ width: spansMonths ? 6.5 : 5.6 }); });
-    cols.push({ width: 9 }, { width: 8 }, { width: 11 }, { width: 10 });
+    cols.push({ width: 9 }, { width: 8 }, { width: 11 }, { width: 10 }, { width: 11 }, { width: 11 });
 
     return XlsxWriter.build({
       sheetName: 'Attendance',

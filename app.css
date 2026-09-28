@@ -13,8 +13,11 @@
   --present-bg: #dff4e6;
   --absent: #b3261e;
   --absent-bg: #fce4e2;
-  --holiday-bg: #fdecc0;
-  --holiday-line: #b7791f;
+  /* Sundays and public holidays: a darker grey day, darker green if worked */
+  --off-bg: #dde3e6;
+  --off-head: #c7d0d5;
+  --worked-off-bg: #8fd1a6;
+  --worked-off: #0b4f2a;
   --danger: #b3261e;
   --radius: 14px;
   --shadow: 0 1px 2px rgba(16, 32, 38, .06), 0 4px 14px rgba(16, 32, 38, .05);
@@ -38,8 +41,10 @@
     --present-bg: #14301f;
     --absent: #ff9188;
     --absent-bg: #36191a;
-    --holiday-bg: #3a2f0f;
-    --holiday-line: #f2c94c;
+    --off-bg: #243135;
+    --off-head: #34454b;
+    --worked-off-bg: #1f6b3e;
+    --worked-off: #c8f5d8;
     --danger: #ff9188;
     --shadow: 0 1px 2px rgba(0, 0, 0, .4);
   }
@@ -423,9 +428,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .grid thead .corner { z-index: 5; left: 0; text-align: left; padding-left: 10px; }
 .grid .day { width: 40px; min-width: 40px; }
-.grid .day.weekend { color: var(--text); background: var(--line); }
-/* Sunday, and any public holiday, get the same amber the marked cells use */
-.grid .day.holiday { color: var(--text); background: var(--holiday-bg); }
+/* Sunday or a public holiday — darker. Saturday is an ordinary day here. */
+.grid .day.off { color: var(--text); background: var(--off-head); }
 .grid .day.is-today { background: var(--accent); color: #fff; }
 .grid .day.is-today .dwd { color: rgba(255, 255, 255, .8); }
 .grid .dnum { display: block; font-size: 12.5px; color: var(--text); }
@@ -450,10 +454,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 /* one day for one worker */
 .grid td.c { position: relative; width: 42px; min-width: 42px; }
-.grid td.c.weekend { background: var(--surface-2); }
-/* Sunday or a public holiday, not yet marked — a lighter version of the
-   flag below, so an empty Sunday/holiday still stands out while planning. */
-.grid td.c.holiday { background: color-mix(in srgb, var(--holiday-bg) 55%, var(--surface)); }
+.grid td.c.off { background: var(--off-bg); }
 .grid td.c.is-today { background: var(--accent-soft); }
 /*
  * The bottom strip is always reserved for the hours badge, whether or not
@@ -470,14 +471,10 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .cell.on-a { background: var(--absent-bg); color: var(--absent); }
 .cell.on-h { background: var(--accent-soft); color: var(--accent); }
 /*
- * A mark on a Sunday or public holiday: the amber background takes over so
- * it reads at a glance, but the P/A letter keeps its own colour — a Sunday
- * or holiday worked is still worth telling apart from one taken off.
+ * Worked (P or H) on a Sunday or public holiday: darker green, so the days
+ * that earn Sunday or holiday pay stand out. An A on one stays plain red.
  */
-.cell.flag.on-p, .cell.flag.on-a, .cell.flag.on-h {
-  background: var(--holiday-bg);
-  box-shadow: inset 0 0 0 2px var(--holiday-line);
-}
+.cell.worked-off { background: var(--worked-off-bg); color: var(--worked-off); }
 .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 /* the strip along the bottom of a present day, which sets extra hours */
@@ -517,8 +514,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid .tot:last-child { right: 0; }
 .grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
 .grid tr.subtotal .tot { background: var(--surface-2); }
-.grid .tot.sun, .grid .tot.hol { font-size: 12px; }
-.grid thead .tot.sun, .grid thead .tot.hol { color: var(--holiday-line); }
 
 /* ── search ─────────────────────────────────────────────── */
 .searchbar {

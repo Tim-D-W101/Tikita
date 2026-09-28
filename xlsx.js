@@ -146,14 +146,20 @@
     TOTAL: 10,
     HOURS: 11,
     GROUP: 12,
-    GROUP_SPAN: 13
+    GROUP_SPAN: 13,
+    // Sunday and public-holiday columns: a darker grey day, and a darker
+    // green for a day worked on one.
+    HEAD_OFF: 14,
+    HEAD_SMALL_OFF: 15,
+    BLANK_OFF: 16,
+    WORKED_OFF: 17
   };
 
   var STYLES = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
     '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts>',
-    '<fonts count="7">',
+    '<fonts count="8">',
     '<font><sz val="11"/><color rgb="FF1F2933"/><name val="Calibri"/></font>',
     '<font><b/><sz val="16"/><color rgb="FF0F5C58"/><name val="Calibri"/></font>',
     '<font><sz val="10"/><color rgb="FF6B7280"/><name val="Calibri"/></font>',
@@ -161,8 +167,9 @@
     '<font><b/><sz val="11"/><color rgb="FF15803D"/><name val="Calibri"/></font>',
     '<font><b/><sz val="11"/><color rgb="FFB91C1C"/><name val="Calibri"/></font>',
     '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>',
+    '<font><b/><sz val="11"/><color rgb="FF0B4F2A"/><name val="Calibri"/></font>',
     '</fonts>',
-    '<fills count="7">',
+    '<fills count="9">',
     '<fill><patternFill patternType="none"/></fill>',
     '<fill><patternFill patternType="gray125"/></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FFE7EEF0"/><bgColor indexed="64"/></patternFill></fill>',
@@ -170,6 +177,8 @@
     '<fill><patternFill patternType="solid"><fgColor rgb="FFFDE3E3"/><bgColor indexed="64"/></patternFill></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FF0F5C58"/><bgColor indexed="64"/></patternFill></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FFF7F8F9"/><bgColor indexed="64"/></patternFill></fill>',
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFCBD3D8"/><bgColor indexed="64"/></patternFill></fill>',
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF8FD1A6"/><bgColor indexed="64"/></patternFill></fill>',
     '</fills>',
     '<borders count="2">',
     '<border><left/><right/><top/><bottom/><diagonal/></border>',
@@ -181,7 +190,7 @@
     '<diagonal/></border>',
     '</borders>',
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>',
-    '<cellXfs count="14">',
+    '<cellXfs count="18">',
     // 0 DEFAULT
     '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>',
     // 1 TITLE
@@ -210,6 +219,14 @@
     '<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
     // 13 GROUP_SPAN
     '<xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>',
+    // 14 HEAD_OFF — Sunday / public holiday day number
+    '<xf numFmtId="0" fontId="3" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>',
+    // 15 HEAD_SMALL_OFF — its weekday letter
+    '<xf numFmtId="0" fontId="3" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+    // 16 BLANK_OFF — nothing marked on a Sunday / holiday
+    '<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>',
+    // 17 WORKED_OFF — P or H on a Sunday / holiday: darker green
+    '<xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
     '</cellXfs>',
     '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>',
     '</styleSheet>'
