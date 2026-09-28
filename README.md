@@ -63,15 +63,17 @@ Click a day to change it — blank → **P** → **A** → **H** → blank — a
 strip along the bottom of a day to set its hours: overtime on a P, hours worked
 on an H. A day carrying a note has a corner flag; hover it to read the note.
 
-**Sundays and South African public holidays** are shaded amber, and any mark on
-one is boxed in amber so it stands out. Hover a shaded day's header to see which
-holiday it is.
+**Sundays and South African public holidays** are the darker grey columns;
+Saturday is an ordinary working day and looks like one. A day *worked* on a
+Sunday or holiday — P or H — turns darker green, so the days that earn Sunday
+or holiday pay stand out. An A on one stays plain red. Hover a darker day's
+header to see which holiday it is.
 
 Six totals stay pinned to the right as the days scroll, with a subtotal per
 team: **P**, **A**, **Hrs** (hours worked on H days), **Extra** (overtime),
-**Sun** and **Hol**. Sun and Hol count days *worked* — P or H — because they
-are there for Sunday and holiday pay; a Sunday marked absent is highlighted but
-not counted. A day that is both a Sunday and a holiday counts in both.
+**Sun** and **Hol**. Sun and Hol count days worked — P or H — because they
+are there for Sunday and holiday pay; a Sunday marked absent is not counted.
+A day that is both a Sunday and a holiday counts in both.
 
 The holiday calendar is worked out, not typed in, so it never needs updating:
 the ten fixed dates, Good Friday and Family Day from Easter, and the Public
@@ -93,9 +95,9 @@ it is good at.
 One sheet, laid out like a payroll timesheet: workers down the left, one column
 per day across the top, grouped under a heading per site.
 
-| | 1 | 2 | 3 | 4 | … | Present | Absent | Hours-only hrs | Extra hrs |
-|---|---|---|---|---|---|---|---|---|---|
-| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 2 | 6.5 |
+| | 1 | 2 | 3 | 4 | … | Present | Absent | Hours-only hrs | Extra hrs | Sundays worked | Holidays worked |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 2 | 6.5 | 2 | 1 |
 
 - **P** — present
 - **A** — absent
@@ -103,8 +105,10 @@ per day across the top, grouped under a heading per site.
 - **H2** — worked only 2 hours that day
 - blank — not marked that day
 
-The Sunday/holiday highlighting and the Sun/Hol counts are on the Records
-screen only; the spreadsheet does not carry them yet.
+Sundays and public holidays are the darker grey columns, as on the Records
+screen, with *Hol* under the date of a holiday that is not a Sunday. A day
+worked on one is darker green. The two last columns count those days worked,
+and a line under the table names the public holidays that fall in the period.
 
 Each site gets a subtotal row, and there is an all-sites total when you export
 more than one. The top row and the worker column stay frozen as you scroll, and
