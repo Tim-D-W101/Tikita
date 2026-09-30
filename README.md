@@ -64,16 +64,17 @@ strip along the bottom of a day to set its hours: overtime on a P, hours worked
 on an H. A day carrying a note has a corner flag; hover it to read the note.
 
 **Sundays and South African public holidays** are the darker grey columns;
-Saturday is an ordinary working day and looks like one. A day *worked* on a
-Sunday or holiday — P or H — turns darker green, so the days that earn Sunday
-or holiday pay stand out. An A on one stays plain red. Hover a darker day's
-header to see which holiday it is.
+Saturday is an ordinary working day and looks like one. A *full day* (P)
+worked on a Sunday or holiday turns darker green, so the days that earn Sunday
+or holiday pay stand out. An H there keeps its usual look and an A stays plain
+red. Hover a darker day's header to see which holiday it is.
 
-Six totals stay pinned to the right as the days scroll, with a subtotal per
-team: **P**, **A**, **Hrs** (hours worked on H days), **Extra** (overtime),
-**Sun** and **Hol**. Sun and Hol count days worked — P or H — because they
-are there for Sunday and holiday pay; a Sunday marked absent is not counted.
-A day that is both a Sunday and a holiday counts in both.
+Six totals stay pinned to the right, with a subtotal per team: **P**, **A**,
+**Hrs** (hours worked on H days), **Extra** (overtime), **Sun** and **Hol**.
+Sun and Hol count full days only — a P — because they are there for Sunday and
+holiday pay. An H on a Sunday or holiday is not a day worked: its hours go
+under Hrs like any other H. A Sunday marked absent is not counted either. A
+day that is both a Sunday and a holiday counts in both.
 
 The holiday calendar is worked out, not typed in, so it never needs updating:
 the ten fixed dates, Good Friday and Family Day from Easter, and the Public

@@ -271,8 +271,12 @@
     return publicHolidayName(key) || (parseKey(key).getDay() === 0 ? 'Sunday' : '');
   }
 
-  /* A mark that means work was done that day — what Sun/Hol pay counts. */
-  function worked(mark) { return !!mark && (mark.s === 'P' || mark.s === 'H'); }
+  /*
+   * A full day worked — what the Sun and Hol counts, and the darker green,
+   * go by. Only a P: an H is part of a day, and its hours are counted under
+   * Hrs instead, so a one-hour H on a holiday is not a holiday worked.
+   */
+  function fullDay(mark) { return !!mark && mark.s === 'P'; }
 
   // ── data helpers ───────────────────────────────────────
 
@@ -682,8 +686,8 @@
       '<th class="tot" scope="col">A</th>' +
       '<th class="tot" scope="col" title="Hours worked on hours-only (H) days">Hrs</th>' +
       '<th class="tot" scope="col" title="Overtime on full days">Extra</th>' +
-      '<th class="tot sun" scope="col" title="Sundays worked (P or H)">Sun</th>' +
-      '<th class="tot hol" scope="col" title="Public holidays worked (P or H)">Hol</th></tr>';
+      '<th class="tot sun" scope="col" title="Sundays worked in full (P) — hours-only days go under Hrs">Sun</th>' +
+      '<th class="tot hol" scope="col" title="Public holidays worked in full (P) — hours-only days go under Hrs">Hol</th></tr>';
 
     var body = groups.map(function (group) {
       var gp = 0, ga = 0, gh = 0, gx = 0, gsun = 0, ghol = 0;
@@ -695,10 +699,10 @@
           if (mark && mark.s === 'P') { p++; x += mark.x || 0; }
           else if (mark && mark.s === 'A') { a++; }
           else if (mark && mark.s === 'H') { h += mark.x || 0; }
-          // Days worked (P or H) only: these tallies are for Sunday and
-          // holiday pay, and a Sunday marked absent is not one worked. A day
-          // that is both a Sunday and a holiday counts in both.
-          if (worked(mark)) {
+          // Full days (P) only: these tallies are for Sunday and holiday pay.
+          // An H's hours are already in Hrs, and an A is not a day worked. A
+          // day that is both a Sunday and a holiday counts in both.
+          if (fullDay(mark)) {
             if (parseKey(d).getDay() === 0) sun++;
             if (publicHolidayName(d)) hol++;
           }
@@ -776,7 +780,7 @@
     var out = '<td class="' + tdCls + '">' +
       '<button type="button" class="cell' +
         (status === 'P' ? ' on-p' : status === 'A' ? ' on-a' : status === 'H' ? ' on-h' : '') +
-        (special && worked(mark) ? ' worked-off' : '') + '" ' +
+        (special && fullDay(mark) ? ' worked-off' : '') + '" ' +
         'data-act="cycle" data-w="' + worker.id + '" data-d="' + day + '" ' +
         'title="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + '">' +
       (status || '') + (note ? '<span class="has-note" aria-hidden="true"></span>' : '') +
@@ -1104,7 +1108,7 @@
 
           // Sundays and holidays worked, for Sunday and holiday pay. A day
           // that is both counts in both.
-          if (worked(mark)) {
+          if (fullDay(mark)) {
             if (parseKey(key).getDay() === 0) t.sun++;
             if (publicHolidayName(key)) t.hol++;
           }
@@ -1117,7 +1121,7 @@
           } else if (mark.s === 'H') {
             // worked only part of the day: the letter plus the hours, e.g. H1.5
             t.short += hrs;
-            line.push({ v: 'H' + round2(hrs), s: off ? S.WORKED_OFF : S.CENTER });
+            line.push({ v: 'H' + round2(hrs), s: S.CENTER });
           } else {
             t.absent++;
             line.push({ v: 'A', s: S.ABSENT });
@@ -1165,8 +1169,8 @@
 
     rows.push([]);
     rows.push([{ v: 'P = present · A = absent · P+n = present with n extra hours · Hn = worked only n hours · blank = not marked', s: S.SUBTITLE }]);
-    rows.push([{ v: 'Darker columns are Sundays and South African public holidays ("Hol" under the date); a day worked on one is darker green. ' +
-                    'Sundays and holidays worked count P and H days only.', s: S.SUBTITLE }]);
+    rows.push([{ v: 'Darker columns are Sundays and South African public holidays ("Hol" under the date); a full day (P) worked on one is darker green. ' +
+                    'Sundays and holidays worked count full days (P) only; hours-only days are counted under Hours-only hrs.', s: S.SUBTITLE }]);
 
     // Which holidays fall in this period, by name, so a darker column can be
     // traced back to a reason.
