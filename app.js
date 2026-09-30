@@ -953,6 +953,13 @@
 
   function renderExport() {
     if (!ui.exportFrom || !ui.exportTo) applyRangePreset('thisMonth');
+
+    // The backup advice depends on whether the records live anywhere else.
+    var shared = TikitaSync.status().connected;
+    $('backupNoteShared').hidden = !shared;
+    $('backupNoteLocal').hidden = shared;
+    $('backupRestoreShared').hidden = !shared;
+
     $('exportFrom').value = ui.exportFrom;
     $('exportTo').value = ui.exportTo;
 
@@ -1284,7 +1291,8 @@
       var days = Object.keys(data.records || {}).length;
       var ok = confirm('Restore this backup?\n\n' +
         data.sites.length + ' site(s), ' + (data.workers || []).length + ' worker(s), ' +
-        days + ' day(s) of records.\n\nThis replaces everything currently on this device.');
+        days + ' day(s) of records.\n\nThis replaces everything currently on this device' +
+        (TikitaSync.status().connected ? ', and sends the backup to your other devices too.' : '.'));
       if (!ok) return;
 
       state.sites = data.sites;
