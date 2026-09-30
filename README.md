@@ -29,9 +29,11 @@ hours** field appears under their name; leave it at 0 for a normal day, or use
 
 **H** is for someone who came in but worked only part of the day — an hour, a
 morning. The field under their name then asks for **hours worked** instead, and
-starts at 1. An H is not a present day and not an absent one: it has its own
-tile on Today, its own *Hrs* total on Records, and exports as `H1.5` with its
-own column.
+starts at 1. An H is not a present day and not an absent one. Its hours are
+added to **extra hours** wherever those are totalled — the Today tile, the
+*Extra* column on Records, and *Extra hrs* in the export — and on Today a
+separate tile counts how many people worked only some hours. It exports as
+`H1.5`.
 
 Once someone is marked, **Add a note** appears under their name — *left early*,
 *off sick*, *rain stopped work*. It hangs off that day's mark, so it goes to
@@ -69,11 +71,11 @@ worked on a Sunday or holiday turns darker green, so the days that earn Sunday
 or holiday pay stand out. An H there keeps its usual look and an A stays plain
 red. Hover a darker day's header to see which holiday it is.
 
-Six totals stay pinned to the right, with a subtotal per team: **P**, **A**,
-**Hrs** (hours worked on H days), **Extra** (overtime), **Sun** and **Hol**.
+Five totals stay pinned to the right, with a subtotal per team: **P**, **A**,
+**Extra** (overtime on P days plus the hours of H days), **Sun** and **Hol**.
 Sun and Hol count full days only — a P — because they are there for Sunday and
 holiday pay. An H on a Sunday or holiday is not a day worked: its hours go
-under Hrs like any other H. A Sunday marked absent is not counted either. A
+under Extra like any other H. A Sunday marked absent is not counted either. A
 day that is both a Sunday and a holiday counts in both.
 
 The holiday calendar is worked out, not typed in, so it never needs updating:
@@ -96,14 +98,14 @@ it is good at.
 One sheet, laid out like a payroll timesheet: workers down the left, one column
 per day across the top, grouped under a heading per site.
 
-| | 1 | 2 | 3 | 4 | … | Present | Absent | Hours-only hrs | Extra hrs | Sundays worked | Holidays worked |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 2 | 6.5 | 2 | 1 |
+| | 1 | 2 | 3 | 4 | … | Present | Absent | Extra hrs | Sundays worked | Holidays worked |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 8.5 | 2 | 1 |
 
 - **P** — present
 - **A** — absent
 - **P+1.5** — present, with 1.5 extra hours
-- **H2** — worked only 2 hours that day
+- **H2** — worked only 2 hours that day; the 2 hours are added to *Extra hrs*
 - blank — not marked that day
 
 Sundays and public holidays are the darker grey columns, as on the Records

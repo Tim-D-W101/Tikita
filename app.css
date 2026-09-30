@@ -484,7 +484,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /*
  * A full day (P) on a Sunday or public holiday: darker green, so the days
  * that earn Sunday or holiday pay stand out. An H there keeps its own look
- * (its hours count under Hrs), and an A stays plain red.
+ * (its hours count under Extra), and an A stays plain red.
  */
 .cell.worked-off { background: var(--worked-off-bg); color: var(--worked-off); }
 .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -510,8 +510,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid tr.subtotal th, .grid tr.subtotal td { background: var(--surface-2); font-weight: 700; }
 
 /*
- * The six totals — Present, Absent, hours-only Hrs, Extra, Sundays,
- * Holidays. The month normally fits without scrolling now; on a window too
+ * The five totals — Present, Absent, Extra (overtime plus the hours of H
+ * days), Sundays, Holidays. The month normally fits without scrolling now; on a window too
  * narrow for that they stay pinned to the right while the days scroll under
  * them. Offsets are multiples of the 42px column set on col.col-tot.
  */
@@ -521,8 +521,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   background: var(--surface); font-weight: 600; padding: 4px 2px;
   overflow: hidden; white-space: nowrap;
 }
-.grid .tot:nth-last-child(6) { right: 210px; border-left: 2px solid var(--line); }
-.grid .tot:nth-last-child(5) { right: 168px; }
+.grid .tot:nth-last-child(5) { right: 168px; border-left: 2px solid var(--line); }
 .grid .tot:nth-last-child(4) { right: 126px; }
 .grid .tot:nth-last-child(3) { right: 84px; }
 .grid .tot:nth-last-child(2) { right: 42px; }
