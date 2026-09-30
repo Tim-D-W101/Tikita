@@ -177,9 +177,23 @@
 
     <div class="card muted-card">
       <h3 class="card-title">Backup</h3>
+      <!-- one of these two shows, depending on whether this device is sharing -->
+      <p class="card-note" id="backupNoteShared" hidden>
+        Your records are also kept on the shared database and your other devices,
+        so losing this one loses nothing. But a mistake &mdash; like deleting a team
+        &mdash; reaches every device too, and a backup file is the only way back.
+        Save one at each month-end, before payroll, and keep it somewhere other
+        than this device.
+      </p>
+      <p class="card-note" id="backupNoteLocal">
+        Records are kept on this device only. If you lose it or clear its browser
+        data, they go with it. Save a backup now and then and keep it somewhere
+        safe &mdash; or connect with the company code so the other devices hold a
+        copy too.
+      </p>
       <p class="card-note">
-        Records are stored on this device only. If you lose it or clear the
-        browser, they go with it. Save a backup now and then, and keep it somewhere safe.
+        <b>Restore</b> replaces everything on this device with the backup<span id="backupRestoreShared" hidden>,
+        and sends it to your other devices too</span>.
       </p>
       <div class="btn-row">
         <button type="button" class="ghost-btn" id="backupBtn">Save backup</button>

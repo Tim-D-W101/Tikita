@@ -144,17 +144,21 @@ the `workspaces` table and re-enter the new code on each phone.
 
 ## Back up your records
 
-Once the devices are connected, the shared database is itself a backup — a
+Once the devices are connected, the shared database is itself a copy — a
 lost phone costs you nothing, because its records are on the PC and the other
-phones too.
+phones too. But a mistake, like deleting a team, reaches every device as well,
+and a backup file is the only way back. Save one at each month-end, before
+payroll, and keep it somewhere other than the device.
 
-Until then, records live only in this phone's browser storage. If you lose the
-phone, or clear the browser's site data, **the records go with it.**
+Until the devices are connected, records live only in this phone's browser
+storage. If you lose the phone, or clear the browser's site data, **the records
+go with it.**
 
 **Export → Backup → Save backup** writes a small `.json` file holding
 everything. Send it to yourself the same way you send the Excel file, and keep
 it somewhere safe. **Restore backup** loads one back — on a new phone, or after
-a mishap. Restoring replaces whatever is currently on the device.
+a mishap. Restoring replaces whatever is currently on the device, and on a
+connected device it sends the backup to the other devices too.
 
 Exporting the Excel file regularly is itself a decent backup of the numbers;
 the JSON backup is the one that can be loaded back into the app.
