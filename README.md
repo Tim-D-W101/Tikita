@@ -292,5 +292,12 @@ falls back to the last cached copy instead of hanging. Attendance records are
 never touched by an update; they live in `localStorage`, separate from the
 cache.
 
+"Network" means the server itself. GitHub Pages lets a browser keep any file
+for ten minutes, which on its own made an update take up to ten minutes to
+appear — even after reloading, because Chromium reused its in-memory copy of
+the old stylesheet and scripts without asking the service worker. So the
+worker revalidates every file with the server (an unchanged file is a tiny
+304) and hands the page copies marked `no-cache`.
+
 Bump `CACHE` in `sw.js` when you **add or remove** a file in the `ASSETS` list,
 so the pre-cache matches what the app actually loads.
