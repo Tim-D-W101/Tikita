@@ -707,7 +707,7 @@
         gp += p; ga += a; gh += h; gx += x; gsun += sun; ghol += hol;
 
         return '<tr' + (w.active === false ? ' class="gone"' : '') + '>' +
-          '<th class="name" scope="row">' + escapeHtml(w.name) +
+          '<th class="name" scope="row" title="' + escapeHtml(w.name) + '">' + escapeHtml(w.name) +
             (w.active === false ? '<span class="tag">removed</span>' : '') + '</th>' +
           cells +
           '<td class="tot">' + p + '</td>' +
@@ -731,8 +731,19 @@
           '<td class="tot hol">' + (ghol || '') + '</td></tr>';
     }).join('');
 
-    wrap.innerHTML = '<div class="grid-wrap"><table class="grid">' +
-      '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+    /*
+     * The whole month on one screen: the name and total columns have set
+     * widths and the days share everything left over, so a wider window
+     * gives wider days rather than more scrolling. Only on a window too
+     * narrow for 18px a day does the grid fall back to scrolling sideways.
+     */
+    var cols = '<colgroup><col class="col-name">' +
+      '<col class="col-day" span="' + days.length + '">' +
+      '<col class="col-tot" span="' + TOT_COLS + '"></colgroup>';
+    var minWidth = 120 + TOT_COLS * 42 + days.length * 18;
+
+    wrap.innerHTML = '<div class="grid-wrap"><table class="grid" style="min-width:' + minWidth + 'px">' +
+      cols + '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
     $('recordsHelp').hidden = false;
 
     scroller = wrap.querySelector('.grid-wrap');
@@ -1299,6 +1310,7 @@
   function setView(name) {
     if (name === 'records' && !wideMode()) name = 'today';
     ui.view = name;
+    document.body.dataset.view = name;   // lets Records take the full width
     VIEWS.forEach(function (v) {
       $('view-' + v).hidden = (v !== name);
     });
