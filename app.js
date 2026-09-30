@@ -274,7 +274,7 @@
   /*
    * A full day worked — what the Sun and Hol counts, and the darker green,
    * go by. Only a P: an H is part of a day, and its hours are counted under
-   * Hrs instead, so a one-hour H on a holiday is not a holiday worked.
+   * Extra instead, so a one-hour H on a holiday is not a holiday worked.
    */
   function fullDay(mark) { return !!mark && mark.s === 'P'; }
 
@@ -305,12 +305,12 @@
       : [siteById(ui.siteId)].filter(Boolean);
     return sites.map(function (site) {
       var workers = workersOfSite(site.id, false);
-      var present = 0, absent = 0, extra = 0, hoursOnly = 0, hoursWorked = 0;
+      var present = 0, absent = 0, extra = 0, hoursOnly = 0;
       workers.forEach(function (w) {
         var mark = getMark(ui.date, w.id);
         if (!mark) return;
         if (mark.s === 'P') { present++; extra += mark.x || 0; }
-        else if (mark.s === 'H') { hoursOnly++; hoursWorked += mark.x || 0; }
+        else if (mark.s === 'H') { hoursOnly++; extra += mark.x || 0; }
         else absent++;
       });
       return {
@@ -319,7 +319,7 @@
                                                // 'All present' always mean this
         shown: filterTeam(site, workers),      // and this is what is on screen
         present: present, absent: absent, extra: extra,
-        hoursOnly: hoursOnly, hoursWorked: hoursWorked,
+        hoursOnly: hoursOnly,
         allPresent: workers.length > 0 && present === workers.length
       };
     });
@@ -537,10 +537,10 @@
       return '<section class="team-block">' + head + cards + '</section>';
     }).join('');
 
-    var totalWorkers = 0, hoursOnly = 0, hoursWorked = 0;
+    var totalWorkers = 0, hoursOnly = 0;
     teams.forEach(function (t) {
       present += t.present; absent += t.absent; extra += t.extra;
-      hoursOnly += t.hoursOnly; hoursWorked += t.hoursWorked;
+      hoursOnly += t.hoursOnly;
       totalWorkers += t.workers.length;
     });
 
@@ -559,9 +559,10 @@
     $('sumAbsent').textContent = absent;
     $('sumTodo').textContent = totalWorkers - present - absent - hoursOnly;
     $('sumExtra').textContent = round2(extra);
-    // Only takes up room on a day when somebody actually worked short.
+    // How many people worked only some hours — their hours are already in
+    // the extra hrs tile. Only takes up room on a day somebody worked short.
     $('sumShortItem').hidden = !hoursOnly;
-    $('sumShort').textContent = hoursOnly + (hoursOnly ? ' · ' + round2(hoursWorked) + 'h' : '');
+    $('sumShort').textContent = hoursOnly;
     $('summary').hidden = false;
     $('bulkRow').hidden = filtering;
 
@@ -667,7 +668,7 @@
 
     var today = todayKey();
 
-    var TOT_COLS = 6; // Present, Absent, Hours-only, Extra, Sundays, Holidays
+    var TOT_COLS = 5; // Present, Absent, Extra, Sundays, Holidays
 
     var head = '<tr><th class="corner" scope="col">Worker</th>' +
       days.map(function (d) {
@@ -684,23 +685,23 @@
       }).join('') +
       '<th class="tot" scope="col">P</th>' +
       '<th class="tot" scope="col">A</th>' +
-      '<th class="tot" scope="col" title="Hours worked on hours-only (H) days">Hrs</th>' +
-      '<th class="tot" scope="col" title="Overtime on full days">Extra</th>' +
-      '<th class="tot sun" scope="col" title="Sundays worked in full (P) — hours-only days go under Hrs">Sun</th>' +
-      '<th class="tot hol" scope="col" title="Public holidays worked in full (P) — hours-only days go under Hrs">Hol</th></tr>';
+      '<th class="tot" scope="col" title="All extra hours: overtime on P days plus the hours of H days">Extra</th>' +
+      '<th class="tot sun" scope="col" title="Sundays worked in full (P) — hours-only (H) days go under Extra">Sun</th>' +
+      '<th class="tot hol" scope="col" title="Public holidays worked in full (P) — hours-only (H) days go under Extra">Hol</th></tr>';
 
     var body = groups.map(function (group) {
-      var gp = 0, ga = 0, gh = 0, gx = 0, gsun = 0, ghol = 0;
+      var gp = 0, ga = 0, gx = 0, gsun = 0, ghol = 0;
 
       var rows = group.workers.map(function (w) {
-        var p = 0, a = 0, h = 0, x = 0, sun = 0, hol = 0;
+        var p = 0, a = 0, x = 0, sun = 0, hol = 0;
         var cells = days.map(function (d) {
           var mark = getMark(d, w.id);
           if (mark && mark.s === 'P') { p++; x += mark.x || 0; }
           else if (mark && mark.s === 'A') { a++; }
-          else if (mark && mark.s === 'H') { h += mark.x || 0; }
+          // an H's hours are extra hours like any other
+          else if (mark && mark.s === 'H') { x += mark.x || 0; }
           // Full days (P) only: these tallies are for Sunday and holiday pay.
-          // An H's hours are already in Hrs, and an A is not a day worked. A
+          // An H's hours are already in Extra, and an A is not a day worked. A
           // day that is both a Sunday and a holiday counts in both.
           if (fullDay(mark)) {
             if (parseKey(d).getDay() === 0) sun++;
@@ -708,7 +709,7 @@
           }
           return recordCell(w, d, mark, d === today);
         }).join('');
-        gp += p; ga += a; gh += h; gx += x; gsun += sun; ghol += hol;
+        gp += p; ga += a; gx += x; gsun += sun; ghol += hol;
 
         return '<tr' + (w.active === false ? ' class="gone"' : '') + '>' +
           '<th class="name" scope="row" title="' + escapeHtml(w.name) + '">' + escapeHtml(w.name) +
@@ -716,7 +717,6 @@
           cells +
           '<td class="tot">' + p + '</td>' +
           '<td class="tot">' + a + '</td>' +
-          '<td class="tot">' + (h ? round2(h) : '') + '</td>' +
           '<td class="tot">' + (x ? round2(x) : '') + '</td>' +
           '<td class="tot sun">' + (sun || '') + '</td>' +
           '<td class="tot hol">' + (hol || '') + '</td></tr>';
@@ -729,7 +729,6 @@
           '<td colspan="' + days.length + '"></td>' +
           '<td class="tot">' + gp + '</td>' +
           '<td class="tot">' + ga + '</td>' +
-          '<td class="tot">' + (gh ? round2(gh) : '') + '</td>' +
           '<td class="tot">' + (gx ? round2(gx) : '') + '</td>' +
           '<td class="tot sun">' + (gsun || '') + '</td>' +
           '<td class="tot hol">' + (ghol || '') + '</td></tr>';
@@ -1041,8 +1040,8 @@
                       parseKey(sel.from).getFullYear() !== parseKey(sel.to).getFullYear();
 
     var siteLabel = (ui.exportSite === ALL_SITES) ? 'All sites' : siteName(ui.exportSite);
-    // worker col + days + present + absent + hours-only + extra + Sundays + holidays
-    var TOTALS = 6;
+    // worker col + days + present + absent + extra + Sundays + holidays
+    var TOTALS = 5;
     var lastCol = days.length + TOTALS;
     var dayOff = days.map(dayOffName);
 
@@ -1073,7 +1072,7 @@
                    s: off ? S.HEAD_SMALL_OFF : S.HEAD_SMALL });
     });
     headA.push({ v: 'Present', s: S.HEAD }, { v: 'Absent', s: S.HEAD },
-               { v: 'Hours-only hrs', s: S.HEAD }, { v: 'Extra hrs', s: S.HEAD },
+               { v: 'Extra hrs', s: S.HEAD },
                { v: 'Sundays worked', s: S.HEAD }, { v: 'Holidays worked', s: S.HEAD });
     for (var h = 0; h < TOTALS; h++) headB.push({ v: '', s: S.HEAD_SMALL });
     rows.push(headA);
@@ -1086,7 +1085,7 @@
       merges.push(name + '4:' + name + '5');
     }
 
-    var grand = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
+    var grand = { present: 0, absent: 0, extra: 0, sun: 0, hol: 0 };
 
     sel.groups.forEach(function (group) {
       // site banner spanning the full table width
@@ -1095,11 +1094,11 @@
       rows.push(banner);
       merges.push('A' + rows.length + ':' + XlsxWriter.colName(lastCol) + rows.length);
 
-      var subtotal = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
+      var subtotal = { present: 0, absent: 0, extra: 0, sun: 0, hol: 0 };
 
       group.workers.forEach(function (worker) {
         var line = [{ v: worker.name + (worker.active === false ? ' (removed)' : ''), s: S.TEXT }];
-        var t = { present: 0, absent: 0, short: 0, extra: 0, sun: 0, hol: 0 };
+        var t = { present: 0, absent: 0, extra: 0, sun: 0, hol: 0 };
 
         days.forEach(function (key, i) {
           var mark = getMark(key, worker.id);
@@ -1119,8 +1118,9 @@
             t.extra += hrs;
             line.push({ v: hrs > 0 ? ('P+' + round2(hrs)) : 'P', s: off ? S.WORKED_OFF : S.PRESENT });
           } else if (mark.s === 'H') {
-            // worked only part of the day: the letter plus the hours, e.g. H1.5
-            t.short += hrs;
+            // worked only part of the day: the letter plus the hours, e.g. H1.5,
+            // and those hours count as extra hours like any other
+            t.extra += hrs;
             line.push({ v: 'H' + round2(hrs), s: S.CENTER });
           } else {
             t.absent++;
@@ -1130,7 +1130,6 @@
 
         line.push({ v: t.present, t: 'n', s: S.TOTAL });
         line.push({ v: t.absent, t: 'n', s: S.TOTAL });
-        line.push({ v: round2(t.short), t: 'n', s: S.HOURS });
         line.push({ v: round2(t.extra), t: 'n', s: S.HOURS });
         line.push({ v: t.sun, t: 'n', s: S.TOTAL });
         line.push({ v: t.hol, t: 'n', s: S.TOTAL });
@@ -1143,7 +1142,6 @@
       for (var j = 0; j < days.length; j++) totalRow.push({ v: '', s: S.GROUP_SPAN });
       totalRow.push({ v: subtotal.present, t: 'n', s: S.GROUP });
       totalRow.push({ v: subtotal.absent, t: 'n', s: S.GROUP });
-      totalRow.push({ v: round2(subtotal.short), t: 'n', s: S.GROUP });
       totalRow.push({ v: round2(subtotal.extra), t: 'n', s: S.GROUP });
       totalRow.push({ v: subtotal.sun, t: 'n', s: S.GROUP });
       totalRow.push({ v: subtotal.hol, t: 'n', s: S.GROUP });
@@ -1159,7 +1157,6 @@
       for (var k = 0; k < days.length; k++) g.push({ v: '', s: S.GROUP_SPAN });
       g.push({ v: grand.present, t: 'n', s: S.GROUP });
       g.push({ v: grand.absent, t: 'n', s: S.GROUP });
-      g.push({ v: round2(grand.short), t: 'n', s: S.GROUP });
       g.push({ v: round2(grand.extra), t: 'n', s: S.GROUP });
       g.push({ v: grand.sun, t: 'n', s: S.GROUP });
       g.push({ v: grand.hol, t: 'n', s: S.GROUP });
@@ -1170,7 +1167,7 @@
     rows.push([]);
     rows.push([{ v: 'P = present · A = absent · P+n = present with n extra hours · Hn = worked only n hours · blank = not marked', s: S.SUBTITLE }]);
     rows.push([{ v: 'Darker columns are Sundays and South African public holidays ("Hol" under the date); a full day (P) worked on one is darker green. ' +
-                    'Sundays and holidays worked count full days (P) only; hours-only days are counted under Hours-only hrs.', s: S.SUBTITLE }]);
+                    'Sundays and holidays worked count full days (P) only. Extra hrs is overtime on P days plus the hours of H days.', s: S.SUBTITLE }]);
 
     // Which holidays fall in this period, by name, so a darker column can be
     // traced back to a reason.
@@ -1182,7 +1179,7 @@
 
     var cols = [{ width: 26 }];
     days.forEach(function () { cols.push({ width: spansMonths ? 6.5 : 5.6 }); });
-    cols.push({ width: 9 }, { width: 8 }, { width: 11 }, { width: 10 }, { width: 11 }, { width: 11 });
+    cols.push({ width: 9 }, { width: 8 }, { width: 10 }, { width: 11 }, { width: 11 });
 
     return XlsxWriter.build({
       sheetName: 'Attendance',
