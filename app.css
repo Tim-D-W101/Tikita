@@ -409,10 +409,18 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+/*
+ * Fixed layout: the name and total columns take the widths set on their
+ * <col>s, and the day columns split the rest evenly — so the whole month
+ * fits the window instead of running off the right-hand side.
+ */
 .grid {
+  width: 100%; table-layout: fixed;
   border-collapse: separate; border-spacing: 0;
   font-size: 13px; font-variant-numeric: tabular-nums;
 }
+.grid col.col-name { width: clamp(120px, 11vw, 190px); }
+.grid col.col-tot { width: 42px; }
 .grid th, .grid td {
   margin: 0; padding: 0;
   border-bottom: 1px solid var(--line);
@@ -427,7 +435,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   padding: 5px 2px;
 }
 .grid thead .corner { z-index: 5; left: 0; text-align: left; padding-left: 10px; }
-.grid .day { width: 40px; min-width: 40px; }
+.grid .day { overflow: hidden; }
 /* Sunday or a public holiday — darker. Saturday is an ordinary day here. */
 .grid .day.off { color: var(--text); background: var(--off-head); }
 .grid .day.is-today { background: var(--accent); color: #fff; }
@@ -440,11 +448,14 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid .name {
   position: sticky; left: 0; z-index: 2;
   background: var(--surface);
-  min-width: 165px; max-width: 230px;
   text-align: left; font-size: 13.5px; font-weight: 500;
-  padding: 5px 10px;
+  padding: 5px 8px;
+  /* a long name is cut with … rather than widening the column; hover shows it */
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 .grid tr.gone .name { color: var(--text-dim); }
+/* a team's name may run on over its (empty) banner row */
+.grid tr.group .name { overflow: visible; }
 .tag {
   display: inline-block; margin-left: 6px; padding: 0 4px;
   border: 1px solid var(--line); border-radius: 4px;
@@ -453,7 +464,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 
 /* one day for one worker */
-.grid td.c { position: relative; width: 42px; min-width: 42px; }
+.grid td.c { position: relative; }
 .grid td.c.off { background: var(--off-bg); }
 .grid td.c.is-today { background: var(--accent-soft); }
 /*
@@ -484,6 +495,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   background: var(--surface-2); color: var(--text-dim);
   font: inherit; font-size: 9.5px; font-weight: 700; line-height: 13px;
   cursor: pointer; opacity: 0;
+  overflow: hidden; white-space: nowrap; letter-spacing: -.2px;
 }
 .xb.set { opacity: 1; background: var(--accent); color: var(--surface); }
 /* on an H the strip is the hours worked, not overtime — outlined, not filled */
@@ -498,19 +510,21 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 /*
  * The six totals — Present, Absent, hours-only Hrs, Extra, Sundays,
- * Holidays — stay pinned to the right while the days scroll under them. On a
- * 31-day month they are the first thing you want to read.
+ * Holidays. The month normally fits without scrolling now; on a window too
+ * narrow for that they stay pinned to the right while the days scroll under
+ * them. Offsets are multiples of the 42px column set on col.col-tot.
  */
 .grid .tot {
   position: sticky; z-index: 2;
-  width: 54px; min-width: 54px; text-align: center;
-  background: var(--surface); font-weight: 600; padding: 4px 6px;
+  text-align: center;
+  background: var(--surface); font-weight: 600; padding: 4px 2px;
+  overflow: hidden; white-space: nowrap;
 }
-.grid .tot:nth-last-child(6) { right: 270px; border-left: 2px solid var(--line); }
-.grid .tot:nth-last-child(5) { right: 216px; }
-.grid .tot:nth-last-child(4) { right: 162px; }
-.grid .tot:nth-last-child(3) { right: 108px; }
-.grid .tot:nth-last-child(2) { right: 54px; }
+.grid .tot:nth-last-child(6) { right: 210px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(5) { right: 168px; }
+.grid .tot:nth-last-child(4) { right: 126px; }
+.grid .tot:nth-last-child(3) { right: 84px; }
+.grid .tot:nth-last-child(2) { right: 42px; }
 .grid .tot:last-child { right: 0; }
 .grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
 .grid tr.subtotal .tot { background: var(--surface-2); }
@@ -604,6 +618,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
     max-width: 1460px;
     padding: 22px 30px 56px;
   }
+  /* Records wants every pixel across, so the whole month fits */
+  body[data-view="records"] #main { max-width: none; padding-left: 18px; padding-right: 18px; }
 
   .view-title { font-size: 23px; margin-bottom: 18px; }
 
