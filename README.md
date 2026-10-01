@@ -22,7 +22,7 @@ the few absentees to **A**. The header shows *"2 of 3 present"* so you can see
 at a glance which crews are done. When a whole team is already present the
 button turns green; tapping it then clears that team, after a confirm.
 
-Individual workers are **P** / **A** / **H**. Tapping the choice again clears
+Individual workers are **P** / **A** / **H** / **L** / **SL**. Tapping the choice again clears
 it, so a mis-tap is easy to undo. When someone is marked present an **extra
 hours** field appears under their name; leave it at 0 for a normal day, or use
 −/+ (half-hour steps) or type a number for overtime.
@@ -34,6 +34,10 @@ added to **extra hours** wherever those are totalled — the Today tile, the
 *Extra* column on Records, and *Extra hrs* in the export — and on Today a
 separate tile counts how many people worked only some hours. It exports as
 `H1.5`.
+
+**L** is leave and **SL** is sick leave. Neither is a present day or an absent
+one: each has its own tile on Today (shown on a day someone is on it), its own
+column on Records, and its own column in the export.
 
 Once someone is marked, **Add a note** appears under their name — *left early*,
 *off sick*, *rain stopped work*. It hangs off that day's mark, so it goes to
@@ -61,7 +65,8 @@ email or Drive and open it on your PC. On a PC it downloads straight away.
 
 **Records** — a month at a time, on a wide screen only. Workers down the left,
 one column per day across the top, laid out like the exported spreadsheet.
-Click a day to change it — blank → **P** → **A** → **H** → blank — and use the
+Click a day to change it — blank → **P** → **A** → **H** → **L** → **SL** →
+blank — and use the
 strip along the bottom of a day to set its hours: overtime on a P, hours worked
 on an H. A day carrying a note has a corner flag; hover it to read the note.
 
@@ -71,9 +76,11 @@ worked on a Sunday or holiday turns darker green, so the days that earn Sunday
 or holiday pay stand out. An H there keeps its usual look and an A stays plain
 red. Hover a darker day's header to see which holiday it is.
 
-Five totals stay pinned to the right, with a subtotal per team: **P**, **A**,
-**Extra** (overtime on P days plus the hours of H days), **Sun** and **Hol**.
-Sun and Hol count full days only — a P — because they are there for Sunday and
+Seven totals stay pinned to the right, with a subtotal per team: **P**, **A**,
+**L** (leave), **SL** (sick leave), **Extra** (overtime on P days plus the hours
+of H days), **Sun** and **Hol**. **P counts ordinary days only**: a full day
+worked on a Sunday or holiday is counted under Sun or Hol instead, so no day is
+counted twice. Sun and Hol count full days only — a P — because they are there for Sunday and
 holiday pay. An H on a Sunday or holiday is not a day worked: its hours go
 under Extra like any other H. A Sunday marked absent is not counted either. A
 day that is both a Sunday and a holiday counts in both.
@@ -98,19 +105,22 @@ it is good at.
 One sheet, laid out like a payroll timesheet: workers down the left, one column
 per day across the top, grouped under a heading per site.
 
-| | 1 | 2 | 3 | 4 | … | Present | Absent | Extra hrs | Sundays worked | Holidays worked |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Aisha Mensah | P | A | P+1.5 | H2 | | 18 | 3 | 8.5 | 2 | 1 |
+| | 1 | 2 | 3 | 4 | 5 | … | Present | Absent | Leave | Sick leave | Extra hrs | Sundays worked | Holidays worked |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Aisha Mensah | P | A | P+1.5 | H2 | L | | 16 | 3 | 1 | 1 | 8.5 | 2 | 1 |
 
 - **P** — present
 - **A** — absent
 - **P+1.5** — present, with 1.5 extra hours
 - **H2** — worked only 2 hours that day; the 2 hours are added to *Extra hrs*
+- **L** — on leave
+- **SL** — on sick leave
 - blank — not marked that day
 
 Sundays and public holidays are the darker grey columns, as on the Records
 screen, with *Hol* under the date of a holiday that is not a Sunday. A day
 worked on one is darker green. The two last columns count those days worked,
+and *Present* leaves them out, counting ordinary days only,
 and a line under the table names the public holidays that fall in the period.
 
 Each site gets a subtotal row, and there is an all-sites total when you export
