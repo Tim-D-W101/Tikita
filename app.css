@@ -13,6 +13,10 @@
   --present-bg: #dff4e6;
   --absent: #b3261e;
   --absent-bg: #fce4e2;
+  --leave: #2457c5;
+  --leave-bg: #e1eafc;
+  --sick: #a35a00;
+  --sick-bg: #fdefd2;
   /* Sundays and public holidays: a darker grey day, darker green if worked */
   --off-bg: #dde3e6;
   --off-head: #c7d0d5;
@@ -41,6 +45,10 @@
     --present-bg: #14301f;
     --absent: #ff9188;
     --absent-bg: #36191a;
+    --leave: #93b4ff;
+    --leave-bg: #18243f;
+    --sick: #f2b45c;
+    --sick-bg: #33260f;
     --off-bg: #243135;
     --off-head: #34454b;
     --worked-off-bg: #1f6b3e;
@@ -193,8 +201,11 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 
 /* ── summary ────────────────────────────────────────────── */
 .summary {
-  /* four tiles, or five on a day somebody worked only some hours */
-  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px;
+  /*
+   * four tiles, plus hours only / leave / sick on a day they apply; on a
+   * phone a day with all of them wraps onto a second row
+   */
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 8px;
   margin-bottom: 12px;
 }
 .summary-item {
@@ -254,6 +265,14 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .seg button.on-a { background: var(--absent-bg); border-color: var(--absent); color: var(--absent); }
 /* H — came in, but worked only some hours */
 .seg button.on-h { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+/* L — on leave; SL — off sick */
+.seg button.on-l { background: var(--leave-bg); border-color: var(--leave); color: var(--leave); }
+.seg button.on-s { background: var(--sick-bg); border-color: var(--sick); color: var(--sick); }
+/* five buttons have to leave the name some room on a phone */
+@media (max-width: 520px) {
+  .seg { gap: 4px; }
+  .seg button { min-width: 38px; padding: 0 5px; font-size: 14px; }
+}
 .extra.short label { color: var(--accent); font-weight: 600; }
 
 .extra {
@@ -481,6 +500,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .cell.on-p { background: var(--present-bg); color: var(--present); }
 .cell.on-a { background: var(--absent-bg); color: var(--absent); }
 .cell.on-h { background: var(--accent-soft); color: var(--accent); }
+.cell.on-l { background: var(--leave-bg); color: var(--leave); }
+.cell.on-s { background: var(--sick-bg); color: var(--sick); letter-spacing: -.5px; }
 /*
  * A full day (P) on a Sunday or public holiday: darker green, so the days
  * that earn Sunday or holiday pay stand out. An H there keeps its own look
@@ -510,8 +531,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid tr.subtotal th, .grid tr.subtotal td { background: var(--surface-2); font-weight: 700; }
 
 /*
- * The five totals — Present, Absent, Extra (overtime plus the hours of H
- * days), Sundays, Holidays. The month normally fits without scrolling now; on a window too
+ * The seven totals — Present (ordinary days), Absent, Leave, Sick leave,
+ * Extra (overtime plus the hours of H days), Sundays, Holidays. The month normally fits without scrolling now; on a window too
  * narrow for that they stay pinned to the right while the days scroll under
  * them. Offsets are multiples of the 42px column set on col.col-tot.
  */
@@ -521,7 +542,9 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   background: var(--surface); font-weight: 600; padding: 4px 2px;
   overflow: hidden; white-space: nowrap;
 }
-.grid .tot:nth-last-child(5) { right: 168px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(7) { right: 252px; border-left: 2px solid var(--line); }
+.grid .tot:nth-last-child(6) { right: 210px; }
+.grid .tot:nth-last-child(5) { right: 168px; }
 .grid .tot:nth-last-child(4) { right: 126px; }
 .grid .tot:nth-last-child(3) { right: 84px; }
 .grid .tot:nth-last-child(2) { right: 42px; }

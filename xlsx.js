@@ -152,14 +152,16 @@
     HEAD_OFF: 14,
     HEAD_SMALL_OFF: 15,
     BLANK_OFF: 16,
-    WORKED_OFF: 17
+    WORKED_OFF: 17,
+    LEAVE: 18,
+    SICK: 19
   };
 
   var STYLES = [
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
     '<numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts>',
-    '<fonts count="8">',
+    '<fonts count="10">',
     '<font><sz val="11"/><color rgb="FF1F2933"/><name val="Calibri"/></font>',
     '<font><b/><sz val="16"/><color rgb="FF0F5C58"/><name val="Calibri"/></font>',
     '<font><sz val="10"/><color rgb="FF6B7280"/><name val="Calibri"/></font>',
@@ -168,8 +170,10 @@
     '<font><b/><sz val="11"/><color rgb="FFB91C1C"/><name val="Calibri"/></font>',
     '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>',
     '<font><b/><sz val="11"/><color rgb="FF0B4F2A"/><name val="Calibri"/></font>',
+    '<font><b/><sz val="11"/><color rgb="FF1D4ED8"/><name val="Calibri"/></font>',
+    '<font><b/><sz val="11"/><color rgb="FFB45309"/><name val="Calibri"/></font>',
     '</fonts>',
-    '<fills count="9">',
+    '<fills count="11">',
     '<fill><patternFill patternType="none"/></fill>',
     '<fill><patternFill patternType="gray125"/></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FFE7EEF0"/><bgColor indexed="64"/></patternFill></fill>',
@@ -179,6 +183,8 @@
     '<fill><patternFill patternType="solid"><fgColor rgb="FFF7F8F9"/><bgColor indexed="64"/></patternFill></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FFCBD3D8"/><bgColor indexed="64"/></patternFill></fill>',
     '<fill><patternFill patternType="solid"><fgColor rgb="FF8FD1A6"/><bgColor indexed="64"/></patternFill></fill>',
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFDBEAFE"/><bgColor indexed="64"/></patternFill></fill>',
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFEF3C7"/><bgColor indexed="64"/></patternFill></fill>',
     '</fills>',
     '<borders count="2">',
     '<border><left/><right/><top/><bottom/><diagonal/></border>',
@@ -190,7 +196,7 @@
     '<diagonal/></border>',
     '</borders>',
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>',
-    '<cellXfs count="18">',
+    '<cellXfs count="20">',
     // 0 DEFAULT
     '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>',
     // 1 TITLE
@@ -227,6 +233,10 @@
     '<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>',
     // 17 WORKED_OFF — a full day (P) on a Sunday / holiday: darker green
     '<xf numFmtId="0" fontId="7" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+    // 18 LEAVE — blue
+    '<xf numFmtId="0" fontId="8" fillId="9" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+    // 19 SICK — amber
+    '<xf numFmtId="0" fontId="9" fillId="10" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
     '</cellXfs>',
     '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>',
     '</styleSheet>'
