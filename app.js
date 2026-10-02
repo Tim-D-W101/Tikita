@@ -514,17 +514,16 @@
             '<div class="seg" role="group" aria-label="' + escapeHtml(w.name) + ' attendance">' +
               '<button type="button" data-act="mark" data-status="P"' +
                 (status === 'P' ? ' class="on-p" aria-pressed="true"' : ' aria-pressed="false"') + '>P</button>' +
-              '<button type="button" data-act="mark" data-status="A"' +
-                (status === 'A' ? ' class="on-a" aria-pressed="true"' : ' aria-pressed="false"') + '>A</button>' +
+              '<button type="button" class="wide-only' + (status === 'A' ? ' on-a' : '') + '" data-act="mark" data-status="A"' +
+                ' aria-pressed="' + (status === 'A') + '">A</button>' +
+              offButton(status) +
               '<button type="button" data-act="mark" data-status="H" title="Worked only some hours"' +
                 (status === 'H' ? ' class="on-h" aria-pressed="true"' : ' aria-pressed="false"') +
                 ' aria-label="Hours only">H</button>' +
-              '<button type="button" data-act="mark" data-status="L" title="On leave"' +
-                (status === 'L' ? ' class="on-l" aria-pressed="true"' : ' aria-pressed="false"') +
-                ' aria-label="Leave">L</button>' +
-              '<button type="button" data-act="mark" data-status="S" title="Off sick"' +
-                (status === 'S' ? ' class="on-s" aria-pressed="true"' : ' aria-pressed="false"') +
-                ' aria-label="Sick leave">SL</button>' +
+              '<button type="button" class="wide-only' + (status === 'L' ? ' on-l' : '') + '" data-act="mark" data-status="L" title="On leave"' +
+                ' aria-pressed="' + (status === 'L') + '" aria-label="Leave">L</button>' +
+              '<button type="button" class="wide-only' + (status === 'S' ? ' on-s' : '') + '" data-act="mark" data-status="S" title="Off sick"' +
+                ' aria-pressed="' + (status === 'S') + '" aria-label="Sick leave">SL</button>' +
             '</div>' +
           '</div>';
 
@@ -592,6 +591,30 @@
       note.textContent = 'Showing ' + shownCount + ' of ' + totalWorkers +
         ' \u00b7 totals above are for the whole day';
     }
+  }
+
+  /*
+   * On a phone, A, L and SL share one button so the name keeps its room:
+   * each tap moves on a step — A, then L, then SL, then blank. It shows the
+   * one that is set, or A when none of them is. The PC has room for all
+   * three and shows them separately instead (CSS picks which).
+   */
+  var OFF_NEXT = { A: 'L', L: 'S', S: 'S' }; // from SL, setMark clears
+
+  function offButton(status) {
+    var on = status === 'A' || status === 'L' || status === 'S';
+    var shown = on ? status : 'A';
+    return '<button type="button" class="off-cycle narrow-only' + (on ? ' on-' + status.toLowerCase() : '') + '" ' +
+        'data-act="mark-off" aria-pressed="' + on + '" ' +
+        'title="Absent, leave or sick leave — tap again for the next" ' +
+        'aria-label="' + (on ? MARK_NAME[status] : 'Not absent') + '. Tap for ' +
+        (on ? (status === 'S' ? 'none' : MARK_NAME[OFF_NEXT[status]]) : 'absent') + '.">' +
+      MARK_LABEL[shown] +
+      '<span class="steps" aria-hidden="true">' +
+        ['A', 'L', 'S'].map(function (k) {
+          return '<i' + (k === status ? ' class="at"' : '') + '></i>';
+        }).join('') +
+      '</span></button>';
   }
 
   /*
@@ -1613,6 +1636,11 @@
       } else if (btn.dataset.act === 'mark') {
         ui.noteFor = null;
         setMark(ui.date, workerId, btn.dataset.status);
+        renderToday();
+      } else if (btn.dataset.act === 'mark-off') {
+        ui.noteFor = null;
+        var cur = getMark(ui.date, workerId);
+        setMark(ui.date, workerId, (cur && OFF_NEXT[cur.s]) || 'A');
         renderToday();
       } else if (btn.dataset.act === 'plus' || btn.dataset.act === 'minus') {
         var input = card.querySelector('input[data-act="extra"]');
