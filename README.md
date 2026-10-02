@@ -35,8 +35,12 @@ added to **extra hours** wherever those are totalled — the Today tile, the
 separate tile counts how many people worked only some hours. It exports as
 `H1.5`.
 
-**L** is leave and **SL** is sick leave. Neither is a present day or an absent
-one: each has its own tile on Today (shown on a day someone is on it), its own
+**L** is leave and **SL** is sick leave. On a phone, A, L and SL share one
+button so the name keeps its room: each tap moves it on a step, **A → L → SL →
+blank**, and the dots under the letter show where it is. On the PC all five are
+separate buttons, and the worker cards are wide enough that the whole name
+shows. On either, a long name wraps onto a second line rather than being cut
+off. Neither L nor SL is a present day or an absent one: each has its own tile on Today (shown on a day someone is on it), its own
 column on Records, and its own column in the export.
 
 Once someone is marked, **Add a note** appears under their name — *left early*,

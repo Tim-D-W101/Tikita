@@ -251,7 +251,8 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .worker-top { display: flex; align-items: center; gap: 12px; }
 .worker-name {
   flex: 1; min-width: 0; font-size: 16px; font-weight: 600;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* the whole name, always: a long one wraps rather than being cut off */
+  overflow-wrap: anywhere; line-height: 1.25;
 }
 .seg { display: flex; gap: 6px; flex: none; }
 .seg button {
@@ -268,11 +269,18 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 /* L — on leave; SL — off sick */
 .seg button.on-l { background: var(--leave-bg); border-color: var(--leave); color: var(--leave); }
 .seg button.on-s { background: var(--sick-bg); border-color: var(--sick); color: var(--sick); }
-/* five buttons have to leave the name some room on a phone */
-@media (max-width: 520px) {
-  .seg { gap: 4px; }
-  .seg button { min-width: 38px; padding: 0 5px; font-size: 14px; }
+/*
+ * On a phone A, L and SL are one button that steps through them, so the
+ * name keeps its room; the PC shows all five (see the 900px block).
+ */
+.seg .wide-only { display: none; }
+.seg button.off-cycle { position: relative; min-width: 50px; padding-bottom: 6px; }
+.off-cycle .steps {
+  position: absolute; left: 0; right: 0; bottom: 5px;
+  display: flex; justify-content: center; gap: 3px;
 }
+.off-cycle .steps i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .3; }
+.off-cycle .steps i.at { opacity: 1; }
 .extra.short label { color: var(--accent); font-weight: 600; }
 
 .extra {
@@ -651,8 +659,12 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
    * flow into as many columns as fit, so a whole crew — or every crew — is
    * on screen without scrolling.
    */
+  /* all five marks as their own buttons, and cards wide enough that the
+     name beside them is not squeezed */
+  .seg .wide-only { display: block; }
+  .seg .narrow-only { display: none; }
   .team-block {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
     gap: 10px; align-items: start;
   }
   .team-block .team { grid-column: 1 / -1; }
