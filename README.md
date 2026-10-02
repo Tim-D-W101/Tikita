@@ -70,7 +70,10 @@ email or Drive and open it on your PC. On a PC it downloads straight away.
 **Records** — a month at a time, on a wide screen only. Workers down the left,
 one column per day across the top, laid out like the exported spreadsheet.
 Click a day to change it — blank → **P** → **A** → **H** → **L** → **SL** →
-blank — and use the
+blank. Each click also opens a list of every option beside the day (Present,
+Absent, Hours only, Leave, Sick leave, Not marked) with the current one ticked:
+pick one to go straight to it, or ignore it and keep clicking. Esc or a click
+elsewhere closes it, and the arrow keys and Enter work in it too. Use the
 strip along the bottom of a day to set its hours: overtime on a P, hours worked
 on an H. A day carrying a note has a corner flag; hover it to read the note.
 
