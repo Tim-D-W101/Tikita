@@ -809,6 +809,96 @@
       var again = wrap.querySelector(refocus);
       if (again) again.focus();
     }
+    // a redraw (a sync landing, say) keeps an open menu on its day
+    placeMarkMenu();
+  }
+
+  /*
+   * Clicking a day still steps it on, as it always has — and it also opens
+   * this list of every mark beside the day, so one that is four clicks away
+   * is one click away instead. Picking one sets it outright. Esc, or a click
+   * anywhere else, closes it.
+   */
+  var MENU_ORDER = ['P', 'A', 'H', 'L', 'S'];
+  var menuFor = null;   // { d: day, w: workerId } while the menu is open
+
+  function openMarkMenu(day, workerId) {
+    menuFor = { d: day, w: workerId };
+    placeMarkMenu();
+    var menu = $('markMenu');
+    var first = menu.querySelector('.mm-item.is-on') || menu.querySelector('.mm-item');
+    if (first && !menu.hidden) first.focus({ preventScroll: true });
+  }
+
+  function closeMarkMenu(refocusCell) {
+    var was = menuFor;
+    menuFor = null;
+    $('markMenu').hidden = true;
+    if (refocusCell && was) {
+      var cell = markCell(was);
+      if (cell) cell.focus({ preventScroll: true });
+    }
+  }
+
+  function markCell(at) {
+    return $('recordsGrid').querySelector('[data-act="cycle"][data-w="' + at.w + '"][data-d="' + at.d + '"]');
+  }
+
+  function placeMarkMenu() {
+    var menu = $('markMenu');
+    if (!menuFor) { menu.hidden = true; return; }
+    var cell = ui.view === 'records' ? markCell(menuFor) : null;
+    if (!cell) { closeMarkMenu(); return; }
+
+    var mark = getMark(menuFor.d, menuFor.w);
+    var current = mark ? mark.s : '';
+    var worker = workerById(menuFor.w);
+    var special = dayOffName(menuFor.d);
+
+    menu.innerHTML =
+      '<div class="mm-head">' + escapeHtml(worker ? worker.name : '') +
+        '<span>' + shortDate(menuFor.d) + (special ? ' · ' + escapeHtml(special) : '') + '</span></div>' +
+      MENU_ORDER.map(function (k) {
+        return '<button type="button" class="mm-item' + (k === current ? ' is-on' : '') + '" ' +
+            'role="menuitemradio" aria-checked="' + (k === current) + '" data-pick="' + k + '">' +
+          '<span class="mm-key on-' + k.toLowerCase() + '">' + MARK_LABEL[k] + '</span>' +
+          MARK_NAME[k] + (k === 'H' ? ' <small>(some hours)</small>' : '') +
+        '</button>';
+      }).join('') +
+      '<button type="button" class="mm-item mm-clear' + (current ? '' : ' is-on') + '" ' +
+          'role="menuitemradio" aria-checked="' + !current + '" data-pick="">' +
+        '<span class="mm-key"></span>Not marked</button>';
+    menu.hidden = false;
+    positionMarkMenu(cell);
+  }
+
+  // under the day, or above it when there is no room below; never off either
+  // side of the window
+  function positionMarkMenu(cell) {
+    var menu = $('markMenu');
+    cell = cell || (menuFor && markCell(menuFor));
+    if (!cell) { closeMarkMenu(); return; }
+    var r = cell.getBoundingClientRect();
+    var w = menu.offsetWidth, h = menu.offsetHeight;
+    var top = r.bottom + 4;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+    var left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+  }
+
+  function pickMark(status) {
+    if (!menuFor) return;
+    var at = menuFor;
+    var mark = getMark(at.d, at.w);
+    var current = mark ? mark.s : '';
+    // setMark clears when handed the letter already there, so only call it
+    // for an actual change: a new letter, or clearing one that is set
+    if (status !== current) setMark(at.d, at.w, status || current);
+    closeMarkMenu();
+    renderRecords();
+    var cell = markCell(at);
+    if (cell) cell.focus({ preventScroll: true });
   }
 
   function recordCell(worker, day, mark, isToday) {
@@ -1387,6 +1477,7 @@
 
   function setView(name) {
     if (name === 'records' && !wideMode()) name = 'today';
+    if (name !== 'records') closeMarkMenu();
     ui.view = name;
     document.body.dataset.view = name;   // lets Records take the full width
     VIEWS.forEach(function (v) {
@@ -1601,8 +1692,39 @@
       } else if (btn.dataset.act === 'cycle') {
         cycleMark(btn.dataset.d, btn.dataset.w);
         renderRecords();
+        openMarkMenu(btn.dataset.d, btn.dataset.w);
       }
     });
+
+    $('markMenu').addEventListener('click', function (e) {
+      var item = e.target.closest('[data-pick]');
+      if (item) pickMark(item.dataset.pick);
+    });
+
+    $('markMenu').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeMarkMenu(true); return; }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      var items = Array.prototype.slice.call(this.querySelectorAll('.mm-item'));
+      var i = items.indexOf(document.activeElement);
+      var next = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+      items[next].focus();
+    });
+
+    // a click anywhere but the menu or a day closes it (a day reopens it)
+    document.addEventListener('click', function (e) {
+      if (!menuFor) return;
+      if (e.target.closest('#markMenu') || e.target.closest('[data-act="cycle"]')) return;
+      closeMarkMenu();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && menuFor) closeMarkMenu(true);
+    });
+    // it is pinned to the window, so it follows its day when the grid moves
+    document.addEventListener('scroll', function (e) {
+      if (menuFor && !(e.target.closest && e.target.closest('#markMenu'))) positionMarkMenu();
+    }, true);
+    window.addEventListener('resize', function () { if (menuFor) positionMarkMenu(); });
 
     $('siteChips').addEventListener('click', function (e) {
       var chip = e.target.closest('[data-site]');
