@@ -63,6 +63,14 @@ than act on half a list.
 *Remove* takes a worker off the daily list but keeps their past records, and
 they still appear in exports; *Restore* puts them back.
 
+Teams are listed in the same fixed order everywhere — the team chips, Today,
+Records, Workers and the export — on the phones and the PC alike: Induna,
+Garden, General, Macs, Weedicide, Workshop, Cane, Loc, Security, Zone, Loc
+Bell, FLX, Gledhow, Mposa, Girls A (Tog), Girls B (Anties), Temps. A new team
+goes after those, alphabetically. The order is the `TEAM_ORDER` list in
+`app.js`; each line there holds every name a team goes by, so renaming one
+keeps its place, and changing the order means editing that list.
+
 **Export** — pick a period and a site, then **Export Excel file**. On a phone
 this opens the share sheet, so you can send the file to yourself on WhatsApp,
 email or Drive and open it on your PC. On a PC it downloads straight away.
