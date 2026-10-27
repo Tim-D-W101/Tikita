@@ -294,6 +294,58 @@
     return null;
   }
 
+  /*
+   * The order teams are listed in on every screen and in the export, as the
+   * office keeps them on paper. Each line is one team under every name it
+   * goes by — on the sheet and in the app — so renaming Tog to Girls A, say,
+   * keeps it in its place. Without this a device listed teams in whatever
+   * order it first received them, which on the PC was not the phones' order.
+   * A team not listed here comes after these, alphabetically, so every device
+   * still shows the same order.
+   */
+  var TEAM_ORDER = [
+    ['Induna', 'Induna’s'],
+    ['Garden', 'Garden chaps'],
+    ['General'],
+    ['Macs', 'Mac’s'],
+    ['Weedicide'],
+    ['Workshop', 'Wshop'],
+    ['Cane'],
+    ['Loc'],
+    ['Security'],
+    ['Zone', 'Izone'],
+    ['Loc Bell'],
+    ['FLX'],
+    ['Gledhow', 'Gled'],
+    ['Mposa'],
+    ['Girls A', 'Tog'],
+    ['Girls B', 'Anties'],
+    ['Temps']
+  ];
+
+  /* Case, spaces and apostrophes don't count: Mac's, Macs and MACS are one. */
+  function teamKey(name) {
+    return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  var TEAM_RANK = Object.create(null);
+  TEAM_ORDER.forEach(function (names, rank) {
+    names.forEach(function (name) { TEAM_RANK[teamKey(name)] = rank; });
+  });
+
+  function teamRank(site) {
+    var rank = TEAM_RANK[teamKey(site.name)];
+    return rank === undefined ? TEAM_ORDER.length : rank;
+  }
+
+  function orderedSites() {
+    return state.sites.slice().sort(function (a, b) {
+      return (teamRank(a) - teamRank(b)) ||
+        String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }) ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    });
+  }
+
   function workersOfSite(siteId, includeInactive) {
     return state.workers.filter(function (w) {
       return w.siteId === siteId && (includeInactive || w.active !== false);
@@ -308,7 +360,7 @@
   /* The teams shown on the Today screen: one, or all of them. */
   function visibleTeams() {
     var sites = (ui.siteId === ALL_SITES)
-      ? state.sites.slice()
+      ? orderedSites()
       : [siteById(ui.siteId)].filter(Boolean);
     return sites.map(function (site) {
       var workers = workersOfSite(site.id, false);
@@ -660,7 +712,7 @@
     if (state.sites.length < 2) { row.hidden = true; row.innerHTML = ''; return; }
     row.hidden = false;
 
-    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(state.sites);
+    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(orderedSites());
     row.innerHTML = chips.map(function (s) {
       return '<button type="button" class="chip' + (s.id === ui.siteId ? ' is-active' : '') +
         '" role="tab" aria-selected="' + (s.id === ui.siteId) + '" data-site="' + s.id + '">' +
@@ -948,7 +1000,7 @@
    */
   function recordGroups(days) {
     var sites = (ui.recordSite === ALL_SITES)
-      ? state.sites.slice()
+      ? orderedSites()
       : [siteById(ui.recordSite)].filter(Boolean);
 
     return sites.map(function (site) {
@@ -965,7 +1017,7 @@
     if (state.sites.length < 2) { row.hidden = true; row.innerHTML = ''; return; }
     row.hidden = false;
 
-    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(state.sites);
+    var chips = [{ id: ALL_SITES, name: 'All teams' }].concat(orderedSites());
     row.innerHTML = chips.map(function (s) {
       return '<button type="button" class="chip' + (s.id === ui.recordSite ? ' is-active' : '') +
         '" role="tab" aria-selected="' + (s.id === ui.recordSite) + '" data-site="' +
@@ -1057,7 +1109,7 @@
       return;
     }
 
-    var blocks = state.sites.map(function (site) {
+    var blocks = orderedSites().map(function (site) {
       var workers = filterTeam(site, workersOfSite(site.id, true));
       if (searchTerm() && !workers.length) return '';
       var lines = workers.length
@@ -1108,7 +1160,7 @@
 
     var select = $('exportSite');
     select.innerHTML = '<option value="' + ALL_SITES + '">All sites</option>' +
-      state.sites.map(function (s) {
+      orderedSites().map(function (s) {
         return '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.name) + '</option>';
       }).join('');
     select.value = ui.exportSite;
@@ -1145,7 +1197,7 @@
 
     var days = eachDay(from, to);
     var sites = (ui.exportSite === ALL_SITES)
-      ? state.sites.slice()
+      ? orderedSites()
       : [siteById(ui.exportSite)].filter(Boolean);
 
     var groups = sites.map(function (site) {
@@ -1457,7 +1509,7 @@
       state.sites = data.sites;
       state.workers = Array.isArray(data.workers) ? data.workers : [];
       state.records = (data.records && typeof data.records === 'object') ? data.records : {};
-      ui.siteId = state.sites.length ? state.sites[0].id : null;
+      ui.siteId = state.sites.length ? orderedSites()[0].id : null;
       state.sites.forEach(function (x) { TikitaSync.touch('sites', x.id); });
       state.workers.forEach(function (x) { TikitaSync.touch('workers', x.id); });
       Object.keys(state.records).forEach(function (day) {
@@ -1574,7 +1626,7 @@
     var validSelection = (ui.siteId === ALL_SITES && state.sites.length > 1) ||
                          (ui.siteId && siteById(ui.siteId));
     if (!validSelection) {
-      ui.siteId = state.sites.length ? state.sites[0].id : null;
+      ui.siteId = state.sites.length ? orderedSites()[0].id : null;
     }
     if (ui.recordSite !== ALL_SITES && !siteById(ui.recordSite)) ui.recordSite = ALL_SITES;
 
