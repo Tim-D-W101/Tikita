@@ -137,6 +137,68 @@
     });
   });
 
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var canObserve = 'IntersectionObserver' in window;
+
+  /* ── Navigation: mark the section on screen ─────────── */
+  var spyNav = $('[data-spy]');
+  if (spyNav && canObserve) {
+    var links = $$('a[href^="#"]', spyNav);
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var mark = function (id) {
+      links.forEach(function (a) {
+        if (byId[id] === a) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+      });
+    };
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) mark(e.target.id); });
+    }, { rootMargin: '-45% 0px -50% 0px' });
+    $$('main > section[id]').forEach(function (sec) { spy.observe(sec); });
+  }
+
+  /* ── One "Check dates" on screen at a time ─────────────
+   * The header button (desktop) and the bottom dock (phone) wait until the
+   * hero's own button has scrolled away, and the dock steps aside again
+   * while the form itself is on screen. */
+  var head = $('.site-head');
+  var heroCta = $('.hero-actions .btn-sun');
+  var dock = $('.dock');
+  var datesSection = $('#check-dates');
+  var heroShowing = !!heroCta, formShowing = false;
+  var syncDock = function () { if (dock) dock.classList.toggle('is-hidden', heroShowing || formShowing); };
+  if (heroCta && canObserve) {
+    new IntersectionObserver(function (entries) {
+      var e = entries[0];
+      heroShowing = e.isIntersecting;
+      if (head) head.classList.toggle('is-past-hero', !e.isIntersecting && e.boundingClientRect.top < 0);
+      syncDock();
+    }).observe(heroCta);
+  } else {
+    heroShowing = false;
+    if (head) head.classList.add('is-past-hero');
+  }
+  if (datesSection && canObserve) {
+    new IntersectionObserver(function (entries) {
+      formShowing = entries[0].isIntersecting;
+      syncDock();
+    }, { threshold: 0.2 }).observe(datesSection);
+  }
+  syncDock();
+
+  /* ── Roadbook: the rows arrive in order, once ──────── */
+  var roadbook = $('.roadbook');
+  if (roadbook && canObserve && !reduceMotion) {
+    $$('.rb-row', roadbook).forEach(function (row, i) { row.style.setProperty('--i', i); });
+    roadbook.classList.add('will-reveal');
+    var reveal = function () { roadbook.classList.add('is-revealed'); };
+    var rbObs = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) { reveal(); rbObs.disconnect(); }
+    }, { threshold: 0.15 });
+    rbObs.observe(roadbook);
+    window.addEventListener('beforeprint', reveal);
+  }
+
   /* ── Check dates: build a WhatsApp or email message ── */
   var form = $('#enquiry');
   if (!form) return;
@@ -151,7 +213,9 @@
   var name = $('#name', form);
   var msg = $('#msg', form);
   var nightsOut = $('#nights', form);
-  var errorBox = $('#form-error', form);
+  var done = $('#form-done', form);
+  var doneTitle = $('#form-done-title', form);
+  var tried = false;
 
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
   var iso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
@@ -160,18 +224,54 @@
     return d.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
   };
   var nightsBetween = function (a, b) { return Math.round((b - a) / 86400000); };
+  var num = function (el) { return parseInt(el.value, 10) || 0; };
 
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   arrive.min = iso(today);
 
-  function updateNights() {
-    var a = parse(arrive.value);
-    var b = parse(depart.value);
-    if (a) {
-      var next = new Date(a); next.setDate(next.getDate() + 1);
-      depart.min = iso(next);
+  /* Errors sit under their own field and are read out with it */
+  function setError(field, text) {
+    var box = $('#' + field.id + '-error', form);
+    if (text) {
+      field.setAttribute('aria-invalid', 'true');
+      if (box) { box.textContent = text; box.hidden = false; }
+    } else {
+      field.removeAttribute('aria-invalid');
+      if (box) { box.textContent = ''; box.hidden = true; }
     }
+    return !text;
+  }
+
+  var rules = {
+    arrive: function () {
+      var a = parse(arrive.value);
+      if (!a) return 'Choose the day you arrive.';
+      if (a < today) return 'Arrival can’t be in the past. Choose today or a later date.';
+      return '';
+    },
+    depart: function () {
+      var a = parse(arrive.value), b = parse(depart.value);
+      if (!b) return 'Choose the day you leave.';
+      if (a && b <= a) return 'Departure needs to be at least one night after arrival.';
+      return '';
+    },
+    adults: function () {
+      if (num(adults) < 1) return 'Add at least one adult.';
+      var total = num(adults) + num(children);
+      if (total > maxGuests) return 'The house sleeps up to ' + maxGuests + '. You have ' + total + ' guests.';
+      return '';
+    },
+    children: function () { return num(children) < 0 ? 'Children can’t be a negative number.' : ''; },
+    name: function () { return name.value.trim() ? '' : 'Add your name so we know who to reply to.'; }
+  };
+  var order = [arrive, depart, adults, children, name];
+
+  function checkOne(field) { return setError(field, rules[field.id]()); }
+
+  function updateNights() {
+    var a = parse(arrive.value), b = parse(depart.value);
+    if (a) { var next = new Date(a); next.setDate(next.getDate() + 1); depart.min = iso(next); }
     if (a && b && b > a) {
       var n = nightsBetween(a, b);
       nightsOut.textContent = n + (n === 1 ? ' night' : ' nights') + (n < 7 ? '. In high season the minimum stay is 7 nights.' : '');
@@ -179,6 +279,18 @@
       nightsOut.textContent = '';
     }
   }
+
+  function updateSteppers() {
+    $$('.step', form).forEach(function (btn) {
+      var input = $('#' + btn.getAttribute('data-for'), form);
+      var step = parseInt(btn.getAttribute('data-step'), 10);
+      var v = num(input);
+      var min = parseInt(input.min, 10), max = parseInt(input.max, 10);
+      var full = num(adults) + num(children) >= maxGuests;
+      btn.disabled = step < 0 ? v <= min : (v >= max || full);
+    });
+  }
+
   arrive.addEventListener('change', function () {
     var a = parse(arrive.value), b = parse(depart.value);
     if (a && (!b || b <= a)) {
@@ -186,61 +298,69 @@
       depart.value = iso(week);
     }
     updateNights();
+    if (tried || arrive.value) checkOne(arrive);
+    if (depart.getAttribute('aria-invalid')) checkOne(depart);
   });
-  depart.addEventListener('change', updateNights);
+  depart.addEventListener('change', function () { updateNights(); checkOne(depart); });
 
-  function fail(field, text) {
-    errorBox.textContent = text;
-    errorBox.hidden = false;
-    if (field) { field.setAttribute('aria-invalid', 'true'); field.focus(); }
-    return false;
-  }
+  /* Check a field when the guest leaves it, not on every keystroke */
+  [adults, children, name].forEach(function (field) {
+    field.addEventListener('blur', function () {
+      if (tried || field.value) checkOne(field);
+      /* the head count is one rule across both fields */
+      if (field === children || adults.getAttribute('aria-invalid')) checkOne(adults);
+    });
+    field.addEventListener('input', function () {
+      if (field.getAttribute('aria-invalid')) checkOne(field);
+      updateSteppers();
+    });
+  });
 
-  function check() {
-    $$('[aria-invalid]', form).forEach(function (el) { el.removeAttribute('aria-invalid'); });
-    errorBox.hidden = true;
+  $$('.step', form).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = $('#' + btn.getAttribute('data-for'), form);
+      var v = num(input) + parseInt(btn.getAttribute('data-step'), 10);
+      v = Math.max(parseInt(input.min, 10), Math.min(parseInt(input.max, 10), v));
+      input.value = v;
+      updateSteppers();
+      if (adults.getAttribute('aria-invalid') || tried) checkOne(adults);
+    });
+  });
+  updateSteppers();
 
-    var a = parse(arrive.value);
-    var b = parse(depart.value);
-    var ad = parseInt(adults.value, 10) || 0;
-    var ch = parseInt(children.value, 10) || 0;
-
-    if (!a) return fail(arrive, 'Choose an arrival date.');
-    if (a < today) return fail(arrive, 'Arrival can’t be in the past.');
-    if (!b) return fail(depart, 'Choose a departure date.');
-    if (b <= a) return fail(depart, 'Departure needs to be after arrival.');
-    if (ad < 1) return fail(adults, 'Add at least one adult.');
-    if (ch < 0) return fail(children, 'Children can’t be a negative number.');
-    if (ad + ch > maxGuests) return fail(adults, 'Aloha 16 sleeps up to ' + maxGuests + ' guests. You have ' + (ad + ch) + '.');
-    if (!name.value.trim()) return fail(name, 'Add your name so we know who to reply to.');
-    return { a: a, b: b, ad: ad, ch: ch };
-  }
-
-  function compose(v) {
-    var n = nightsBetween(v.a, v.b);
+  function compose() {
+    var a = parse(arrive.value), b = parse(depart.value);
+    var n = nightsBetween(a, b), ad = num(adults), ch = num(children);
     var lines = [
       'Hi Aloha 16, I’d like to check availability.',
       '',
-      'Arrival: ' + pretty(v.a),
-      'Departure: ' + pretty(v.b) + ' (' + n + (n === 1 ? ' night' : ' nights') + ')',
-      'Guests: ' + v.ad + (v.ad === 1 ? ' adult' : ' adults') + (v.ch ? ', ' + v.ch + (v.ch === 1 ? ' child' : ' children') : ''),
+      'Arrival: ' + pretty(a),
+      'Departure: ' + pretty(b) + ' (' + n + (n === 1 ? ' night' : ' nights') + ')',
+      'Guests: ' + ad + (ad === 1 ? ' adult' : ' adults') + (ch ? ', ' + ch + (ch === 1 ? ' child' : ' children') : ''),
       'Name: ' + name.value.trim()
     ];
     if (msg.value.trim()) lines.push('', msg.value.trim());
-    return lines.join('\n');
+    return { text: lines.join('\n'), a: a, b: b };
   }
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var v = check();
-    if (!v) return;
-    var text = compose(v);
+    tried = true;
+    done.hidden = true;
+    var firstBad = null;
+    order.forEach(function (field) { if (!checkOne(field) && !firstBad) firstBad = field; });
+    if (firstBad) { firstBad.focus(); return; }
+
+    var m = compose();
     var via = e.submitter ? e.submitter.value : 'whatsapp';
     if (via === 'email') {
-      var subject = 'Availability: ' + pretty(v.a) + ' to ' + pretty(v.b);
-      window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(text);
+      var subject = 'Availability: ' + pretty(m.a) + ' to ' + pretty(m.b);
+      window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(m.text);
+      doneTitle.textContent = 'Your message is ready in your email app';
     } else {
-      window.open('https://wa.me/' + waNumber + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+      window.open('https://wa.me/' + waNumber + '?text=' + encodeURIComponent(m.text), '_blank', 'noopener');
+      doneTitle.textContent = 'Your message is ready in WhatsApp';
     }
+    done.hidden = false;
   });
 })();

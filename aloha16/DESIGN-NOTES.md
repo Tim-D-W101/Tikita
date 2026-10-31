@@ -69,3 +69,28 @@ used for text on a light background.
 - `prefers-reduced-motion` turns off smooth scrolling and transitions.
 - Print: "Print directions" gives a one-page A4 sheet with the roadbook, GPS,
   address and phone number.
+
+## Round 2: ui-ux-pro-max review
+The skill's design-system search for hospitality confirmed the navy + gold
+direction. Its serif pairing (Playfair Display SC / Karla), aurora gradients
+and scroll reveals on every section were not adopted: they would undo the
+road-sign identity and add motion with no meaning. Changes made from its UX
+rules:
+
+- **Forms:** errors sit under their own field (`aria-describedby`), the
+  first invalid field takes focus, fields are checked when the guest leaves
+  them, check-in/out times show as helper text, −/+ steppers for guests, and
+  a confirmation appears once the WhatsApp/email message is ready.
+- **One primary action on screen:** the header "Check dates" and the phone
+  dock wait until the hero's button has scrolled away; the dock also steps
+  aside while the form is showing.
+- **Navigation:** the section on screen is marked in the menu.
+- **Scannability:** amenity icon list in The house; icons on the Good to
+  know headings (same 1.75-stroke set).
+- **Motion, kept to cause and effect:** roadbook rows arrive in order once;
+  the photo viewer and phone menu open with a short fade; none of it runs
+  under reduced motion, and print shows the final state.
+- **Details:** the hero name is set on one line to the width of its column
+  at every size; press feedback and `touch-action: manipulation` on
+  controls; the lightbox uses `100dvh`.
+- axe-core: 0 violations at 1440px and 375px (after animations settle).

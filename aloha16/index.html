@@ -17,6 +17,7 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.classList.add('js')</script>
 <link rel="stylesheet" href="styles.css">
 
 <script type="application/ld+json">
@@ -65,7 +66,7 @@
 
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
 
-    <nav class="site-nav" id="site-nav" aria-label="Main">
+    <nav class="site-nav" id="site-nav" aria-label="Main" data-spy>
       <ul>
         <li><a href="#house">The house</a></li>
         <li><a href="#photos">Photos</a></li>
@@ -126,6 +127,17 @@
       <div class="split-head">
         <h2 id="house-title">The house</h2>
         <p class="intro">Aloha 16 is let as a whole house, so the pool, the deck and the beach are yours and your group's for the week. It suits big families and groups of friends who want to cook, braai and spend the day between the pool and the sea.</p>
+
+        <ul class="amenities" aria-label="What the house has">
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V4.5M12 14V4.5M7 7.5h5M7 11h5"/><path d="M2.5 17.5c1.6 0 1.6-1.2 3.2-1.2s1.6 1.2 3.2 1.2 1.6-1.2 3.1-1.2 1.6 1.2 3.2 1.2 1.6-1.2 3.1-1.2 1.6 1.2 3.2 1.2M2.5 21c1.6 0 1.6-1.2 3.2-1.2S7.3 21 8.9 21s1.6-1.2 3.1-1.2S13.6 21 15.2 21s1.6-1.2 3.1-1.2S19.9 21 21.5 21"/></svg>Rim-flow pool</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5a8.5 8.5 0 0 1 17 0Z"/><path d="M12 11.5V20M4.5 20.5h15"/></svg>Beach access</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5h16a8 7 0 0 1-16 0Z"/><path d="M8.5 16.5 6.5 21M15.5 16.5l2 4.5M12 17.5V21M9.5 3.5c-1 1 1 2 0 3.2M14 3.5c-1 1 1 2 0 3.2"/></svg>Braai area</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v6.5a2 2 0 0 0 4 0V3M9 11.5V21M16.5 21V3c-2.2 0-3.5 3.2-3.5 7.5h3.5"/></svg>Full kitchen</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 6.5l2.5-2M9.5 19.5 12 17.5l2.5 2"/></svg>Air conditioning</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V7.5A3.5 3.5 0 0 1 9.5 4h1A3.5 3.5 0 0 1 14 7.5V9M10.5 9h7M12 12.5V14M14 12.5V14M16 12.5V14M13 16.5V18M15 16.5V18"/></svg>Outdoor showers</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r=".9"/></svg>Wi-Fi</li>
+          <li><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20V9.5L12 4l9 5.5V20M7 20v-7h10v7M7 15.5h10M7 18h10"/></svg>Two garages</li>
+        </ul>
       </div>
 
       <dl class="rooms">
@@ -407,15 +419,15 @@
 
       <div class="know">
         <div>
-          <h3>Malaria</h3>
+          <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Malaria</h3>
           <p>Ponta Mamoli is a very low-risk malaria area, and every room has mosquito spray. If you'd like to take preventatives, ask your pharmacist before you travel.</p>
         </div>
         <div>
-          <h3>The pool and the sea</h3>
+          <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.8"/><path d="m5.99 5.99 3.32 3.32M14.69 14.69l3.32 3.32M18.01 5.99l-3.32 3.32M9.31 14.69l-3.32 3.32"/></svg>The pool and the sea</h3>
           <p>The rim-flow pool has no fence and no cover, and there are no lifeguards at the pool or on Ponta Mamoli beach. Children need an adult with them at all times.</p>
         </div>
         <div>
-          <h3>House rules</h3>
+          <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3.5h6v3H9z"/><path d="M7 5H5.5v15.5h13V5H17M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg>House rules</h3>
           <ul>
             <li>No pets.</li>
             <li>No parties, functions or loud music. The estate is quiet from 22:30.</li>
@@ -473,37 +485,49 @@
         <div class="field-row">
           <div class="field">
             <label for="arrive">Arrival</label>
-            <input type="date" id="arrive" name="arrive" required>
+            <input type="date" id="arrive" name="arrive" required aria-describedby="dates-help arrive-error">
+            <p class="field-error" id="arrive-error" hidden></p>
           </div>
           <div class="field">
             <label for="depart">Departure</label>
-            <input type="date" id="depart" name="depart" required>
+            <input type="date" id="depart" name="depart" required aria-describedby="dates-help depart-error">
+            <p class="field-error" id="depart-error" hidden></p>
           </div>
         </div>
+        <p class="help" id="dates-help">Check-in from 14:00, check-out by 10:00.</p>
         <p class="nights" id="nights" aria-live="polite"></p>
 
         <div class="field-row">
           <div class="field">
             <label for="adults">Adults</label>
-            <input type="number" id="adults" name="adults" min="1" max="18" value="2" inputmode="numeric" required>
+            <div class="stepper">
+              <button type="button" class="step" data-step="-1" data-for="adults" aria-label="One adult fewer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+              <input type="number" id="adults" name="adults" min="1" max="18" value="2" inputmode="numeric" aria-describedby="adults-error">
+              <button type="button" class="step" data-step="1" data-for="adults" aria-label="One adult more"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+            </div>
+            <p class="field-error" id="adults-error" hidden></p>
           </div>
           <div class="field">
             <label for="children">Children</label>
-            <input type="number" id="children" name="children" min="0" max="17" value="0" inputmode="numeric">
+            <div class="stepper">
+              <button type="button" class="step" data-step="-1" data-for="children" aria-label="One child fewer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+              <input type="number" id="children" name="children" min="0" max="17" value="0" inputmode="numeric" aria-describedby="children-error">
+              <button type="button" class="step" data-step="1" data-for="children" aria-label="One child more"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+            </div>
+            <p class="field-error" id="children-error" hidden></p>
           </div>
         </div>
 
         <div class="field">
           <label for="name">Your name</label>
-          <input type="text" id="name" name="name" autocomplete="name" required>
+          <input type="text" id="name" name="name" autocomplete="name" required aria-describedby="name-error">
+          <p class="field-error" id="name-error" hidden></p>
         </div>
 
         <div class="field">
           <label for="msg">Anything else <span class="opt">(optional)</span></label>
           <textarea id="msg" name="msg" rows="3"></textarea>
         </div>
-
-        <p class="form-error" id="form-error" role="alert" hidden></p>
 
         <div class="form-actions">
           <button class="btn btn-sun btn-lg" type="submit" name="via" value="whatsapp">
@@ -516,6 +540,14 @@
           </button>
         </div>
         <p class="form-note">Both buttons open your own WhatsApp or email app with the message filled in, ready for you to send.</p>
+
+        <div class="form-done" id="form-done" role="status" tabindex="-1" hidden>
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9.5"/></svg>
+          <div>
+            <p class="form-done-title" id="form-done-title">Your message is ready in WhatsApp</p>
+            <p>Press send there, and we'll reply with availability and a quote.</p>
+          </div>
+        </div>
       </form>
     </div>
   </section>
