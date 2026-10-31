@@ -1,0 +1,26 @@
+# Old aloha16.co.za pages -> sections of the new one-page site.
+# Keeps Google rankings and anyone's old bookmarks working. Apache only;
+# needs mod_rewrite (standard on shared PHP hosting). NE keeps the "#".
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^ponta-mamoli-accommodation\.php$ /#house        [R=301,NE,L]
+  RewriteRule ^photo-gallery\.php$              /#photos       [R=301,NE,L]
+  RewriteRule ^rates\.php$                      /#rates        [R=301,NE,L]
+  RewriteRule ^location\.php$                   /#getting-here [R=301,NE,L]
+  RewriteRule ^general-information\.php$        /#good-to-know [R=301,NE,L]
+  RewriteRule ^reviews\.php$                    /#guests       [R=301,NE,L]
+  RewriteRule ^availability\.php$               /#check-dates  [R=301,NE,L]
+  RewriteRule ^contact-details\.php$            /#check-dates  [R=301,NE,L]
+  RewriteRule ^index\.php$                      /              [R=301,L]
+</IfModule>
+
+# Cache fonts and photos for a year, the page itself briefly.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType text/css "access plus 1 week"
+  ExpiresByType application/javascript "access plus 1 week"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>
