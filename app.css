@@ -448,6 +448,7 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .grid col.col-name { width: clamp(120px, 11vw, 190px); }
 .grid col.col-tot { width: 42px; }
+.grid col.col-mnote { width: 150px; }
 .grid th, .grid td {
   margin: 0; padding: 0;
   border-bottom: 1px solid var(--line);
@@ -597,6 +598,17 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid .tot:last-child { right: 0; }
 .grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
 .grid tr.subtotal .tot { background: var(--surface-2); }
+
+.grid .mnote { padding: 2px 4px; background: var(--surface); }
+.grid thead .mnote { background: var(--surface-2); color: var(--text-dim); font-weight: 600; font-size: 12px; text-align: left; padding-left: 8px; }
+.grid tr.subtotal .mnote { background: var(--surface-2); }
+.mnote-input {
+  width: 100%; height: 26px; padding: 0 6px; font: inherit; font-size: 12px;
+  border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--text);
+}
+.mnote-input:hover { border-color: var(--line); }
+.mnote-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--surface-2); }
 
 /* ── search ─────────────────────────────────────────────── */
 .searchbar {

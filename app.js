@@ -43,6 +43,7 @@
     sites: [],      // {id, name}
     workers: [],    // {id, siteId, name, active}
     records: {},    // {'YYYY-MM-DD': {workerId: {s: 'P'|'A', x: number}}}
+    monthNotes: {}, // {'YYYY-MM': {workerId: 'text'}} — kept on this device, not synced
     sync: null,     // {code, name, lastNow, lastSyncedAt, lastError} — see sync.js
     pending: null   // changes this phone still owes the other phones
   };
@@ -75,6 +76,7 @@
         state.sites = Array.isArray(parsed.sites) ? parsed.sites : [];
         state.workers = Array.isArray(parsed.workers) ? parsed.workers : [];
         state.records = (parsed.records && typeof parsed.records === 'object') ? parsed.records : {};
+        state.monthNotes = (parsed.monthNotes && typeof parsed.monthNotes === 'object') ? parsed.monthNotes : {};
         if (parsed.sync) state.sync = parsed.sync;
         if (parsed.pending) state.pending = parsed.pending;
       }
@@ -95,6 +97,7 @@
         sites: state.sites,
         workers: state.workers,
         records: state.records,
+        monthNotes: state.monthNotes,
         sync: state.sync,
         pending: state.pending
       }));
@@ -434,6 +437,28 @@
       };
     }
     changed('marks', TikitaSync.markKey(key, workerId));
+  }
+
+  /*
+   * A reminder about a worker for one month — "paid to the 31st, 2 days absent,
+   * deduct from next month". Free text, nothing is calculated from it. It
+   * lives on this device and in backups; it is not part of the shared
+   * database, so it does not reach the phones.
+   */
+  function getMonthNote(month, workerId) {
+    return (state.monthNotes[month] && state.monthNotes[month][workerId]) || '';
+  }
+
+  function setMonthNote(month, workerId, text) {
+    var note = String(text == null ? '' : text).trim().slice(0, 200);
+    if (getMonthNote(month, workerId) === note) return;
+    if (!state.monthNotes[month]) state.monthNotes[month] = {};
+    if (note) state.monthNotes[month][workerId] = note;
+    else {
+      delete state.monthNotes[month][workerId];
+      if (!Object.keys(state.monthNotes[month]).length) delete state.monthNotes[month];
+    }
+    save();
   }
 
   function setNote(key, workerId, text) {
@@ -778,6 +803,7 @@
           '<span class="dnum">' + dt.getDate() + '</span>' +
           '<span class="dwd">' + WEEKDAYS[dow] + '</span></th>';
       }).join('') +
+      '<th class="mnote" scope="col" title="A note for the month, kept on this device — e.g. days to deduct next month">Month note</th>' +
       '<th class="tot" scope="col" title="Full days present on ordinary days — a Sunday or public holiday worked goes under Sun or Hol instead">P</th>' +
       '<th class="tot" scope="col" title="Days absent">A</th>' +
       '<th class="tot" scope="col" title="Days on leave">L</th>' +
@@ -816,6 +842,9 @@
           '<th class="name" scope="row" title="' + escapeHtml(w.name) + '">' + escapeHtml(w.name) +
             (w.active === false ? '<span class="tag">removed</span>' : '') + '</th>' +
           cells +
+          '<td class="mnote"><input type="text" class="mnote-input" maxlength="200" data-act="mnote" ' +
+            'data-w="' + w.id + '" value="' + escapeHtml(getMonthNote(ui.month, w.id)) + '" ' +
+            'placeholder="Add note" aria-label="Month note for ' + escapeHtml(w.name) + '"></td>' +
           '<td class="tot">' + p + '</td>' +
           '<td class="tot">' + a + '</td>' +
           '<td class="tot">' + (l || '') + '</td>' +
@@ -826,10 +855,10 @@
       }).join('');
 
       return '<tr class="group"><th class="name" scope="row">' + escapeHtml(group.site.name) + '</th>' +
-          '<td colspan="' + (days.length + TOT_COLS) + '"></td></tr>' +
+          '<td colspan="' + (days.length + TOT_COLS + 1) + '"></td></tr>' +
         rows +
         '<tr class="subtotal"><th class="name" scope="row">Total</th>' +
-          '<td colspan="' + days.length + '"></td>' +
+          '<td colspan="' + (days.length + 1) + '"></td>' +
           '<td class="tot">' + gp + '</td>' +
           '<td class="tot">' + ga + '</td>' +
           '<td class="tot">' + (gl || '') + '</td>' +
@@ -846,9 +875,9 @@
      * narrow for 18px a day does the grid fall back to scrolling sideways.
      */
     var cols = '<colgroup><col class="col-name">' +
-      '<col class="col-day" span="' + days.length + '">' +
+      '<col class="col-day" span="' + days.length + '">' + '<col class="col-mnote">' +
       '<col class="col-tot" span="' + TOT_COLS + '"></colgroup>';
-    var minWidth = 120 + TOT_COLS * 42 + days.length * 18;
+    var minWidth = 120 + 150 + TOT_COLS * 42 + days.length * 18;
 
     wrap.innerHTML = '<div class="grid-wrap"><table class="grid" style="min-width:' + minWidth + 'px">' +
       cols + '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
@@ -1479,7 +1508,8 @@
       savedAt: new Date().toISOString(),
       sites: state.sites,
       workers: state.workers,
-      records: state.records
+      records: state.records,
+      monthNotes: state.monthNotes
     }, null, 2);
     var blob = new Blob([payload], { type: 'application/json' });
     deliverFile(blob, 'tikita-backup-' + todayKey() + '.json');
@@ -1509,6 +1539,7 @@
       state.sites = data.sites;
       state.workers = Array.isArray(data.workers) ? data.workers : [];
       state.records = (data.records && typeof data.records === 'object') ? data.records : {};
+      state.monthNotes = (data.monthNotes && typeof data.monthNotes === 'object') ? data.monthNotes : {};
       ui.siteId = state.sites.length ? orderedSites()[0].id : null;
       state.sites.forEach(function (x) { TikitaSync.touch('sites', x.id); });
       state.workers.forEach(function (x) { TikitaSync.touch('workers', x.id); });
@@ -1554,7 +1585,7 @@
   function renderFromRemote() {
     var active = document.activeElement;
     var act = (active && active.dataset) ? active.dataset.act : '';
-    if (active && active.tagName === 'INPUT' && (act === 'extra' || act === 'note')) {
+    if (active && active.tagName === 'INPUT' && (act === 'extra' || act === 'note' || act === 'mnote')) {
       if (!heldRender) {
         heldRender = true;
         active.addEventListener('blur', function () {
@@ -1746,6 +1777,12 @@
         renderRecords();
         openMarkMenu(btn.dataset.d, btn.dataset.w);
       }
+    });
+
+    // the month note saves as you type; it never redraws the grid under the cursor
+    $('recordsGrid').addEventListener('input', function (e) {
+      var box = e.target.closest('input[data-act="mnote"]');
+      if (box) setMonthNote(ui.month, box.dataset.w, box.value);
     });
 
     $('markMenu').addEventListener('click', function (e) {

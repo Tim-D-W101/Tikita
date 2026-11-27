@@ -91,6 +91,13 @@ worked on a Sunday or holiday turns darker green, so the days that earn Sunday
 or holiday pay stand out. An H there keeps its usual look and an A stays plain
 red. Hover a darker day's header to see which holiday it is.
 
+**Month note** — a free-text box per worker, just before the totals, for things
+to remember about that person that month: *"paid to the 31st, 2 days absent —
+deduct from December"*. It saves as you type, belongs to the month on screen,
+and nothing is calculated from it. It is kept on the device you type it on and
+is included in the backup file, but it is **not** shared with other devices and
+is not in the Excel export yet.
+
 Seven totals stay pinned to the right, with a subtotal per team: **P**, **A**,
 **L** (leave), **SL** (sick leave), **Extra** (overtime on P days plus the hours
 of H days), **Sun** and **Hol**. **P counts ordinary days only**: a full day
