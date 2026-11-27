@@ -275,6 +275,14 @@
 <!-- Records: the list of every mark, opened by clicking a day -->
 <div class="markmenu" id="markMenu" role="menu" hidden></div>
 
+<!-- Records: the note for one worker for the month on screen -->
+<div class="notebox" id="noteBox" role="dialog" aria-labelledby="noteBoxHead" hidden>
+  <div class="mm-head" id="noteBoxHead"></div>
+  <textarea id="noteBoxText" maxlength="200" rows="4"
+    placeholder="e.g. Paid to the 31st. Absent 2 days, deduct from next month."></textarea>
+  <button type="button" class="notebox-done" id="noteBoxDone">Done</button>
+</div>
+
 <!-- In place of the browser's prompt(), which the desktop app does not have -->
 <dialog class="ask" id="askDialog" aria-labelledby="askTitle">
   <form method="dialog" id="askForm">
