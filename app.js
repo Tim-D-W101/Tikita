@@ -461,6 +461,46 @@
     save();
   }
 
+  function monthNoteButton(w) {
+    var note = getMonthNote(ui.month, w.id);
+    var tip = note ? 'Month note: ' + note : 'Add a note for ' + monthLabel(ui.month);
+    return '<button type="button" class="mn-btn' + (note ? ' has' : '') + '" data-act="mnote-open" ' +
+      'data-w="' + w.id + '" title="' + escapeHtml(tip) + '" aria-label="' + escapeHtml(tip) + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H10l-5 4z"/></svg></button>';
+  }
+
+  var noteFor = null;   // worker whose month note box is open on Records
+
+  function openNoteBox(workerId) {
+    closeMarkMenu();
+    noteFor = workerId;
+    placeNoteBox();
+    var t = $('noteBoxText');
+    if (!$('noteBox').hidden) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  }
+
+  function closeNoteBox() {
+    noteFor = null;
+    $('noteBox').hidden = true;
+  }
+
+  function placeNoteBox() {
+    var box = $('noteBox');
+    var worker = noteFor && workerById(noteFor);
+    var btn = worker && $('recordsGrid').querySelector('[data-act="mnote-open"][data-w="' + noteFor + '"]');
+    if (!worker || !btn || ui.view !== 'records') { closeNoteBox(); return; }
+    $('noteBoxHead').innerHTML = escapeHtml(worker.name) + '<span>' + escapeHtml(monthLabel(ui.month)) + '</span>';
+    var t = $('noteBoxText');
+    if (box.hidden) t.value = getMonthNote(ui.month, noteFor);
+    box.hidden = false;
+    var r = btn.getBoundingClientRect();
+    var w = box.offsetWidth, h = box.offsetHeight;
+    var top = r.bottom + 4;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 4);
+    box.style.top = top + 'px';
+    box.style.left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8) + 'px';
+  }
+
   function setNote(key, workerId, text) {
     var day = state.records[key];
     if (!day || !day[workerId]) return;
@@ -803,7 +843,6 @@
           '<span class="dnum">' + dt.getDate() + '</span>' +
           '<span class="dwd">' + WEEKDAYS[dow] + '</span></th>';
       }).join('') +
-      '<th class="mnote" scope="col" title="A note for the month, kept on this device — e.g. days to deduct next month">Month note</th>' +
       '<th class="tot" scope="col" title="Full days present on ordinary days — a Sunday or public holiday worked goes under Sun or Hol instead">P</th>' +
       '<th class="tot" scope="col" title="Days absent">A</th>' +
       '<th class="tot" scope="col" title="Days on leave">L</th>' +
@@ -840,11 +879,9 @@
 
         return '<tr' + (w.active === false ? ' class="gone"' : '') + '>' +
           '<th class="name" scope="row" title="' + escapeHtml(w.name) + '">' + escapeHtml(w.name) +
-            (w.active === false ? '<span class="tag">removed</span>' : '') + '</th>' +
+            (w.active === false ? '<span class="tag">removed</span>' : '') +
+            monthNoteButton(w) + '</th>' +
           cells +
-          '<td class="mnote"><input type="text" class="mnote-input" maxlength="200" data-act="mnote" ' +
-            'data-w="' + w.id + '" value="' + escapeHtml(getMonthNote(ui.month, w.id)) + '" ' +
-            'placeholder="Add note" aria-label="Month note for ' + escapeHtml(w.name) + '"></td>' +
           '<td class="tot">' + p + '</td>' +
           '<td class="tot">' + a + '</td>' +
           '<td class="tot">' + (l || '') + '</td>' +
@@ -855,10 +892,10 @@
       }).join('');
 
       return '<tr class="group"><th class="name" scope="row">' + escapeHtml(group.site.name) + '</th>' +
-          '<td colspan="' + (days.length + TOT_COLS + 1) + '"></td></tr>' +
+          '<td colspan="' + (days.length + TOT_COLS) + '"></td></tr>' +
         rows +
         '<tr class="subtotal"><th class="name" scope="row">Total</th>' +
-          '<td colspan="' + (days.length + 1) + '"></td>' +
+          '<td colspan="' + days.length + '"></td>' +
           '<td class="tot">' + gp + '</td>' +
           '<td class="tot">' + ga + '</td>' +
           '<td class="tot">' + (gl || '') + '</td>' +
@@ -875,9 +912,9 @@
      * narrow for 18px a day does the grid fall back to scrolling sideways.
      */
     var cols = '<colgroup><col class="col-name">' +
-      '<col class="col-day" span="' + days.length + '">' + '<col class="col-mnote">' +
+      '<col class="col-day" span="' + days.length + '">' +
       '<col class="col-tot" span="' + TOT_COLS + '"></colgroup>';
-    var minWidth = 120 + 150 + TOT_COLS * 42 + days.length * 18;
+    var minWidth = 120 + TOT_COLS * 42 + days.length * 18;
 
     wrap.innerHTML = '<div class="grid-wrap"><table class="grid" style="min-width:' + minWidth + 'px">' +
       cols + '<thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
@@ -892,6 +929,7 @@
     }
     // a redraw (a sync landing, say) keeps an open menu on its day
     placeMarkMenu();
+    if (noteFor) placeNoteBox();
   }
 
   /*
@@ -1585,7 +1623,7 @@
   function renderFromRemote() {
     var active = document.activeElement;
     var act = (active && active.dataset) ? active.dataset.act : '';
-    if (active && active.tagName === 'INPUT' && (act === 'extra' || act === 'note' || act === 'mnote')) {
+    if (active && active.tagName === 'INPUT' && (act === 'extra' || act === 'note')) {
       if (!heldRender) {
         heldRender = true;
         active.addEventListener('blur', function () {
@@ -1768,6 +1806,7 @@
       if (!btn) return;
 
       if (btn.dataset.act === 'goto-workers') { setView('workers'); return; }
+      if (btn.dataset.act === 'mnote-open') { openNoteBox(btn.dataset.w); return; }
       if (!btn.dataset.w || !btn.dataset.d) return;
 
       if (btn.dataset.act === 'hours') {
@@ -1779,10 +1818,21 @@
       }
     });
 
-    // the month note saves as you type; it never redraws the grid under the cursor
-    $('recordsGrid').addEventListener('input', function (e) {
-      var box = e.target.closest('input[data-act="mnote"]');
-      if (box) setMonthNote(ui.month, box.dataset.w, box.value);
+    // the month note box: saves as you type, closes on Done, Esc or a click elsewhere
+    $('noteBoxText').addEventListener('input', function () {
+      if (!noteFor) return;
+      setMonthNote(ui.month, noteFor, this.value);
+      var btn = $('recordsGrid').querySelector('[data-act="mnote-open"][data-w="' + noteFor + '"]');
+      if (btn) btn.classList.toggle('has', !!this.value.trim());
+    });
+    $('noteBoxDone').addEventListener('click', function () { closeNoteBox(); renderRecords(); });
+    $('noteBox').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeNoteBox(); renderRecords(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!noteFor) return;
+      if (e.target.closest('#noteBox') || e.target.closest('[data-act="mnote-open"]')) return;
+      closeNoteBox(); renderRecords();
     });
 
     $('markMenu').addEventListener('click', function (e) {

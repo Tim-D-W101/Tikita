@@ -448,7 +448,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 }
 .grid col.col-name { width: clamp(120px, 11vw, 190px); }
 .grid col.col-tot { width: 42px; }
-.grid col.col-mnote { width: 150px; }
 .grid th, .grid td {
   margin: 0; padding: 0;
   border-bottom: 1px solid var(--line);
@@ -599,16 +598,34 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .grid thead .tot { z-index: 4; background: var(--surface-2); color: var(--text-dim); }
 .grid tr.subtotal .tot { background: var(--surface-2); }
 
-.grid .mnote { padding: 2px 4px; background: var(--surface); }
-.grid thead .mnote { background: var(--surface-2); color: var(--text-dim); font-weight: 600; font-size: 12px; text-align: left; padding-left: 8px; }
-.grid tr.subtotal .mnote { background: var(--surface-2); }
-.mnote-input {
-  width: 100%; height: 26px; padding: 0 6px; font: inherit; font-size: 12px;
-  border: 1px solid transparent; border-radius: 6px;
-  background: transparent; color: var(--text);
+.grid td.name, .grid th.name { padding-right: 26px; }
+.mn-btn {
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px;
+  background: none; color: var(--text-dim); cursor: pointer; opacity: .35;
 }
-.mnote-input:hover { border-color: var(--line); }
-.mnote-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--surface-2); }
+.mn-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.grid tr:hover .mn-btn, .mn-btn:focus-visible { opacity: 1; }
+.mn-btn.has { opacity: 1; color: var(--accent); }
+.mn-btn.has svg { fill: var(--accent-soft); }
+.mn-btn:hover { background: var(--surface-2); }
+
+.notebox {
+  position: fixed; z-index: 30; width: 300px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 8px;
+  box-shadow: 0 10px 30px rgba(16, 32, 38, .18), 0 2px 6px rgba(16, 32, 38, .08);
+}
+.notebox textarea {
+  width: 100%; padding: 8px 10px; font: inherit; font-size: 14px; resize: vertical;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface-2); color: var(--text);
+}
+.notebox textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.notebox-done {
+  display: block; margin: 8px 0 0 auto; padding: 6px 16px; border: 0; border-radius: 8px;
+  background: var(--accent); color: var(--surface); font: inherit; font-weight: 600; cursor: pointer;
+}
 
 /* ── search ─────────────────────────────────────────────── */
 .searchbar {
